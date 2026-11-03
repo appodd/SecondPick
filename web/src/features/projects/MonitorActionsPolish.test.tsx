@@ -1,0 +1,43 @@
+import {cleanup,render,screen,fireEvent,waitFor} from '@testing-library/react';
+import {MemoryRouter} from 'react-router-dom';
+import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
+import {beforeEach,afterEach,expect,it,vi} from 'vitest';
+import {projectApi} from '../../api/projectClient';
+import {ApiError} from '../../api/client';
+import {monitorApi} from '../../api/monitorClient';
+import type {Monitor} from '../../api/monitorClient';
+import type {WindowMonitor} from '../../api/projectClient';
+import {MonitorTaskActions} from './MonitorTaskActions';
+import {StatusSnapshot} from '../../components/status/ExecutionStatus';
+beforeEach(()=>{vi.spyOn(window,'confirm').mockReturnValue(true)});
+afterEach(()=>{cleanup();vi.restoreAllMocks()});
+const m={id:9,task_id:1,keyword:'手柄',state:'stopped',desired_state:null,rounds:1,max_rounds:1,result:{}} as Monitor;
+function mount(monitor=m,window:WindowMonitor|null={mode:'once',runs:[]} as unknown as WindowMonitor,stale=false){render(<QueryClientProvider client={new QueryClient()}><MemoryRouter initialEntries={['/projects/1?view=monitors']}><StatusSnapshot observedAt={Date.now()} unavailable={stale}><MonitorTaskActions task={{id:9,name:'单次采集',monitor,window:window??undefined,source:window?'workspace':'native'}} projectId={1}/></StatusSnapshot></MemoryRouter></QueryClientProvider>)}
+it('emphasizes an available ended-window rerun without changing the main creation action',()=>{mount();const button=screen.getByRole('button',{name:'重新采集'});expect(button).toBeEnabled();expect(button).toHaveClass('mt-restart-action');expect(button.querySelector('svg')).not.toBeNull()});
+it('keeps exhausted native resume disabled with a usable alternative description',()=>{mount(m,null);expect(screen.getByRole('button',{name:'继续采集'})).toBeDisabled();expect(screen.getByRole('note')).toHaveTextContent('新建监控')});
+it('does not offer restart while an exit is still pending',()=>{mount({...m,desired_state:'paused'});expect(screen.queryByRole('button',{name:'重新采集'})).toBeNull();expect(screen.getByRole('note')).toHaveTextContent('等待当前采集退出')});
+it('keeps uncertain state disabled and explains how to check it',()=>{mount(m,{mode:'once',runs:[]} as unknown as WindowMonitor,true);expect(screen.getByRole('button',{name:'重新采集'})).toBeDisabled();expect(screen.getByRole('note')).toHaveTextContent('查看详情')});
+it('uses a checked switch and confirms before interrupting active collection',async()=>{const control=vi.spyOn(monitorApi,'control').mockResolvedValue({...m,state:'paused'});const confirm=vi.spyOn(window,'confirm').mockReturnValue(false);mount({...m,state:'running',max_rounds:3},{mode:'timed',runs:[{state:'running'}]} as unknown as WindowMonitor);const toggle=screen.getByRole('switch',{name:'监控开关'});expect(toggle).toHaveAttribute('aria-checked','true');expect(screen.getByText('监控已开启')).toBeVisible();fireEvent.click(toggle);expect(confirm).toHaveBeenCalled();expect(control).not.toHaveBeenCalled();confirm.mockReturnValue(true);fireEvent.click(toggle);await screen.findByRole('status');expect(control).toHaveBeenCalledWith(1,9,'pause')});
+it('labels single-run pause explicitly and uses the existing pause action',async()=>{const control=vi.spyOn(monitorApi,'control').mockResolvedValue({...m,state:'paused'});mount({...m,state:'running'});fireEvent.click(screen.getByRole('button',{name:'暂停采集'}));expect(control).toHaveBeenCalledWith(1,9,'pause');await screen.findByRole('status')});
+it('resumes an existing timed window rather than creating a new run',async()=>{const control=vi.spyOn(monitorApi,'control').mockResolvedValue({...m,state:'waiting'});const rerun=vi.spyOn(projectApi,'rerun');mount({...m,state:'paused',max_rounds:3},{mode:'timed',runs:[{state:'paused'}]} as unknown as WindowMonitor);expect(screen.getByText('监控已暂停')).toBeVisible();fireEvent.click(screen.getByRole('switch'));expect(control).toHaveBeenCalledWith(1,9,'resume');expect(rerun).not.toHaveBeenCalled();await screen.findByRole('status')});
+it('keeps the server value while pending and after a failed request',async()=>{
+  let reject!: (error:Error)=>void;
+  const control=vi.spyOn(monitorApi,'control').mockImplementation(()=>new Promise((_,fail)=>{reject=fail}));
+  mount({...m,state:'paused',max_rounds:3},{mode:'ongoing',runs:[{state:'paused'}]} as unknown as WindowMonitor);
+  const toggle=screen.getByRole('switch');fireEvent.click(toggle);fireEvent.click(toggle);
+  expect(control).toHaveBeenCalledTimes(1);expect(toggle).toBeDisabled();expect(toggle).toHaveAttribute('aria-checked','false');expect(screen.getByText('正在开启监控…')).toBeVisible();
+  reject(new Error('连接失败'));await screen.findByRole('alert');await waitFor(()=>expect(toggle).toBeEnabled());expect(toggle).toHaveAttribute('aria-checked','false');expect(screen.getByText('监控已暂停')).toBeVisible();
+});
+it.each(['paused','stopped'] as const)('disables a switch until the requested %s state is confirmed',desired_state=>{mount({...m,state:'running',desired_state,max_rounds:3},{mode:'timed',runs:[{state:'running'}]} as unknown as WindowMonitor);expect(screen.getByRole('switch')).toBeDisabled();expect(screen.getByRole('switch')).toHaveAttribute('aria-checked','true');expect(screen.getByText(desired_state==='paused'?'正在暂停监控…':'正在停止监控…')).toBeVisible()});
+it('disables stale and exhausted switches',()=>{const window={mode:'timed',runs:[{state:'paused'}]} as unknown as WindowMonitor;mount({...m,state:'paused'},window);expect(screen.getByRole('switch')).toBeDisabled();cleanup();mount({...m,state:'waiting',max_rounds:3},window,true);expect(screen.getByRole('switch')).toBeDisabled();expect(screen.getByText('监控状态待确认')).toBeVisible()});
+it('keeps expired timed windows on the explicit restart action',()=>{mount(m,{mode:'timed',runs:[{state:'expired'}]} as unknown as WindowMonitor);expect(screen.queryByRole('switch')).toBeNull();expect(screen.getByRole('button',{name:'重新启动监控'})).toBeEnabled()});
+it('offers confirmed rerun for an exhausted paused once scope without using resume',async()=>{
+  const rerun=vi.spyOn(projectApi,'rerun').mockResolvedValue({});const resume=vi.spyOn(monitorApi,'control');
+  mount({...m,state:'paused'},{mode:'once',runs:[{state:'paused'}]} as unknown as WindowMonitor);
+  const button=screen.getByRole('button',{name:'重新采集'});expect(button).toBeEnabled();
+  vi.mocked(window.confirm).mockReturnValue(false);fireEvent.click(button);expect(rerun).not.toHaveBeenCalled();
+  vi.mocked(window.confirm).mockReturnValue(true);fireEvent.click(button);await screen.findByRole('status');expect(rerun).toHaveBeenCalledWith(1,9);expect(resume).not.toHaveBeenCalled();expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('已有商品和历史记录保留'));
+});
+it('continues an unfinished once scope with remaining rounds',async()=>{const control=vi.spyOn(monitorApi,'control').mockResolvedValue({...m,state:'waiting'});mount({...m,state:'paused',rounds:0},{mode:'once',runs:[{state:'paused'}]} as unknown as WindowMonitor);fireEvent.click(screen.getByRole('button',{name:'继续采集'}));await screen.findByRole('status');expect(control).toHaveBeenCalledWith(1,9,'resume')});
+it.each([['http_error','请先登录闲鱼并验证；本次未启动采集。'],['login_required','登录已失效']])('offers account settings for %s and retains the monitor return path',async(code,message)=>{vi.spyOn(projectApi,'rerun').mockRejectedValue(new ApiError({status:409,code,message}));mount();fireEvent.click(screen.getByRole('button',{name:'重新采集'}));const link=await screen.findByRole('link',{name:'前往闲鱼账户设置 →'});const url=new URL(link.getAttribute('href')!,'http://localhost');expect(url.pathname).toBe('/settings');expect(url.searchParams.get('section')).toBe('xianyu');expect(url.searchParams.get('returnTo')).toBe('/projects/1?view=monitors');expect(screen.getByRole('alert')).toHaveTextContent(message)});
+it('does not send unrelated failures to account settings',async()=>{vi.spyOn(projectApi,'rerun').mockRejectedValue(new ApiError({status:500,code:'server_error',message:'保存失败，请稍后重试'}));mount();fireEvent.click(screen.getByRole('button',{name:'重新采集'}));await screen.findByRole('alert');expect(screen.queryByRole('link',{name:'前往闲鱼账户设置 →'})).toBeNull()});

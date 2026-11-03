@@ -1,0 +1,23 @@
+import {render,screen,cleanup} from '@testing-library/react';
+import {afterEach,describe,it,expect} from 'vitest';
+import {StatusBadge,StatusSnapshot} from '../../components/status/ExecutionStatus';
+import type {CriterionJudgment} from '../../api/types';
+import {shoppingFixture} from '../../test/shoppingFixture';
+import {productInsights} from './productInsights';
+import {judgmentTone,matchTone,researchTone} from './evidenceTone';
+import {DecisionEvidence} from './DecisionEvidence';
+afterEach(cleanup);
+const judgment=(status:CriterionJudgment['status'],source_type:CriterionJudgment['source_type']='platform_display',evidence_refs=['ref:1']):CriterionJudgment=>({criterion_id:'model',status,source_type,evidence_refs,reason:'保存记录中的依据'});
+describe('evidence color semantics',()=>{
+ it('keeps ordinary unverified descriptions neutral instead of flooding the page with amber',()=>{for(const source of ['seller_claim','user_statement','inference','image_observation'] as const)expect(judgmentTone(judgment('MET',source))).toBe('neutral')});
+ it('uses qualified positive tone for a matched recorded field, never a verified label',()=>{expect(judgmentTone(judgment('MET'))).toBe('positive');render(<DecisionEvidence points={[{judgment:judgment('MET'),label:'初步符合'}]} empty="未知"/>);expect(screen.getByText('初步符合').closest('li')).toHaveAttribute('data-tone','positive');expect(screen.queryByText(/已核实|独立核验通过/)).toBeNull()});
+ it.each(['NOT_MET','CONFLICT'] as const)('marks referenced %s negative',status=>expect(judgmentTone(judgment(status))).toBe('negative'));
+ it.each(['MET','NOT_MET','CONFLICT'] as const)('does not turn an unreferenced %s into an advantage or confirmed risk',status=>expect(judgmentTone(judgment(status,'platform_display',[]))).toBe('caution'));
+ it('reserves amber for unresolved explicit hard conditions while ordinary unknowns remain gray',()=>{expect(judgmentTone(judgment('UNKNOWN','missing',[]),'hard')).toBe('caution');expect(judgmentTone(judgment('UNKNOWN','missing',[]),'soft')).toBe('neutral');expect(judgmentTone(judgment('UNKNOWN','missing',[]))).toBe('neutral');render(<DecisionEvidence points={[]} empty="未知，尚未研究"/>);expect(screen.getByText('未知，尚未研究')).toHaveClass('ux2-unknown');expect(screen.queryByRole('list')).toBeNull()});
+ it('uses a small neutral seller-source label, not an attention warning for ordinary claims',()=>{render(<DecisionEvidence points={[{judgment:judgment('MET','seller_claim'),label:'卖家成色描述',priority:'soft'}]} empty="未知"/>);expect(screen.getByText('卖家成色描述').closest('li')).toHaveAttribute('data-tone','neutral');expect(screen.getByText('卖家描述 · 未独立核实')).toHaveAttribute('data-source','seller_claim')});
+ it('distinguishes known mismatch, initial match and missing target context',()=>{const d=shoppingFixture(),i=productInsights(d).items.get(1)!;expect(matchTone({...i,match:'meets'})).toBe('positive');expect(matchTone({...i,match:'outside'})).toBe('negative');expect(matchTone({...i,match:'unknown'})).toBe('caution');expect(matchTone({...i,match:'unjudged'})).toBe('neutral')});
+ it('does not paint a nomination or research completion as a confirmed advantage',()=>{const i=productInsights(shoppingFixture()).items.get(1)!;expect(researchTone({...i,assessment:undefined,candidate:true})).toBe('neutral');expect(researchTone(i)).toBe('caution')});
+ it('requires cited negative judgments before coloring a not-met overall conclusion red',()=>{const i=productInsights(shoppingFixture()).items.get(1)!;const assessment={...i.assessment!,conclusion:'not_met' as const,judgments:[judgment('UNKNOWN','missing',[])]};expect(researchTone({...i,ai:'not_met',assessment})).toBe('caution');expect(researchTone({...i,ai:'not_met',assessment:{...assessment,judgments:[judgment('NOT_MET')]}})).toBe('negative')});
+ it('keeps existing operational badge behavior unchanged without an explicit evidence tone',()=>{render(<StatusBadge status={{kind:'waiting',label:'等待执行'}}/>);expect(screen.getByText('等待执行')).not.toHaveAttribute('data-tone')});
+ it('does not preserve positive evidence styling after a live snapshot expires',()=>{render(<StatusSnapshot observedAt={0}><StatusBadge live tone="positive" status={{kind:'ready',label:'原状态'}}/></StatusSnapshot>);expect(screen.getByText('状态暂不可确认')).not.toHaveAttribute('data-tone');expect(screen.queryByText('原状态')).toBeNull()});
+});

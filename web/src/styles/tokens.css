@@ -1,0 +1,32 @@
+:root {
+  color-scheme: light;
+  font-family:
+    Inter, "Segoe UI", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+
+  --color-nav: #202629;
+  --color-nav-elevated: #2b3337;
+  --color-nav-border: #3b454a;
+  --color-nav-text: #f4f6f6;
+  --color-nav-muted: #aeb8bc;
+  --color-canvas: #f4f5f5;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f8f9f9;
+  --color-border: #d9dede;
+  --color-border-strong: #bdc6c7;
+  --color-text: #202627;
+  --color-text-muted: #667173;
+  --color-success: #287a4b;
+  --color-success-soft: #eaf5ee;
+  --color-warning: #a86808;
+  --color-warning-soft: #fff4dc;
+  --color-danger: #b23a37;
+  --color-danger-soft: #fbeceb;
+  --color-focus: #2f716b;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --shadow-focus: 0 0 0 3px rgb(47 113 107 / 24%);
+}

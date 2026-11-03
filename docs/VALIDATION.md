@@ -1,0 +1,44 @@
+# 公开发行验证范围 / Release validation scope
+
+本文件随公开快照发布，记录可复现的验证边界，不包含真实用户数据或内部验收材料。
+
+## 2026-11-03 验证记录
+
+环境为 **Windows CPython 3.12.10**，完整回归依赖使用 [后端测试锁文件](../requirements/backend-tests-windows-py312.lock.txt)。以下是已完成的代码版本验证结果，不是对所有后续改动的自动保证。
+
+| 验证范围 | 通过 | 失败 | 跳过 |
+|---|---:|---:|---:|
+| Private 开发源完整串行 | 1404 | 0 | 0 |
+| Private 开发源完整四进程 | 1404 | 0 | 0 |
+| Public 发行候选完整四进程 | 1374 | 0 | 5 |
+
+两边共有 1379 项用例。Private 另含 25 项未分发的发行工具及本地历史协议检查；Public 的 5 项跳过均因未分发 Private 专属历史验收材料，相关用例在 Private 中通过。没有为达到通过数量而复制私人数据或跳过失败的合成测试。
+
+| 验证类型 | 已完成范围 | 未由此证明的能力 |
+|---|---|---|
+| 离线自动化回归 | 全套后端串行/并行检查、模拟模型与隔离数据；并行使用短临时目录 | 真实平台当下可访问、真实模型判断质量 |
+| 独立安装与依赖 | 新建 Python 环境、固定依赖、Chromium、项目安装、`pip check` 及源码导入位置核对 | 其他系统、Python 版本或任意依赖组合均兼容 |
+| 真实平台采集 | 本轮完整回归未执行真实闲鱼采集 | 平台全站覆盖、账号长期可用或持续抓取稳定性 |
+| 外部模型与长期运行 | 本轮未进行付费模型质量验收或长期多项目运行 | 模型效果、实物真伪、交易结果或长期稳定性认证 |
+
+文档完善后的发行候选会另行检查文档、链接、文件清单及敏感信息；文档调整不代表重新执行了以上全部后端回归。
+
+## 安装和运行
+
+发行版本应从独立目录验证基础依赖安装和 `shopping-agent-web` 启动，使用空数据库、隔离配置与本机测试端口。不要使用用户现有数据库、登录资料或真实监控作为安装测试。
+
+推荐 Windows Python 3.12。独立采集引擎使用 [安装指南](user-guide.md#准备独立采集环境) 中的固定版本和锁定依赖；其完整运行还需要用户自己的系统 Chrome、闲鱼登录和确认后的监控范围。
+
+## 测试和文档
+
+可按 [开发说明](DEVELOPMENT.md) 运行前后端测试及生产构建。测试须使用临时数据、模拟运行时和离线保护，不因测试而执行真实 Codex 或平台采集。
+
+少量历史验收测试依赖不公开的本地验收材料，在公开源码中缺少材料时明确跳过；不会为通过测试而复制真实业务数据。合成数据测试不依赖这些材料，具体跳过原因由 pytest 输出。
+
+README 图片和 GIF 由实际前端配合合成 API 数据生成，不能作为真实平台访问、模型效果或交易结果的验收证据。素材来源见[图片说明](images/README.md)。
+
+## 限制
+
+当前仍为开发版本，不承诺所有环境或全部历史回归均通过。真实闲鱼访问、长期多项目稳定性、外部模型服务及付费调用不在默认安装检查范围；未执行的验证不能表述为通过。
+
+This is a development release. Installation and offline tests use isolated data; the demo images are synthetic. Real Xianyu access, paid model calls, long-running stability, and every supported environment require separate validation. See the installation and development guides for reproducible commands.

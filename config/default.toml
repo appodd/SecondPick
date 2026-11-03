@@ -1,0 +1,39 @@
+default_city = "上海"
+database_path = "data/shopping.sqlite"
+browser_profile_dir = "data/browser-profile"
+reports_dir = "data/reports"
+screenshots_dir = "data/screenshots"
+media_dir = "data/media"
+
+platforms = ["xianyu"]
+
+allow_login = true
+allow_favorite = false
+allow_ocr = true
+
+max_pages_per_platform = 3
+max_listings_per_platform = 50
+
+[safety]
+allow_send_message = false
+allow_purchase = false
+allow_payment = false
+allow_account_settings_change = false
+allow_submit_forms = false
+require_account_risk_confirmation = true
+xianyu_allow_headless = false
+xianyu_max_detail_pages_per_run = 12
+xianyu_min_search_interval_seconds = 1800
+xianyu_min_delay_ms = 3000
+xianyu_max_delay_ms = 8000
+stop_on_access_blocked = true
+
+[monitor_engine]
+enabled = false
+capture_logs = true
+root = "data/research/ai-goofish-monitor"
+python = ".monitor-venv/Scripts/python.exe"
+# Run scripts/setup_monitor.py and check the environment before enabling.
+# Verified local login supplies DPAPI cookies. Start from the repository root.
+# Optional state_file is an administrator-provided fallback; never exposed via API.
+# Engine configuration changes require a service restart.

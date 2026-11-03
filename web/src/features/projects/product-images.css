@@ -1,0 +1,188 @@
+.sp-product-photo {
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+  width:52px;
+  height:52px;
+  border:1px solid #e3eaf2;
+  border-radius:10px;
+  overflow:hidden;
+  background:#f2f5fa;
+  vertical-align:middle
+}
+.sp-product-photo.large {
+  display:flex;
+  width:100%;
+  height:auto;
+  aspect-ratio:16/10;
+  border-radius:12px
+}
+.sp-product-photo img {
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block
+}
+.sp-product-photo.contain img {
+  object-fit:contain
+}
+.sp-photo-fallback {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:10px;
+  width:100%;
+  height:100%;
+  color:#94a3b8;
+  background:linear-gradient(135deg,#eef2f8,#f8faff)
+}
+.sp-photo-fallback small {
+  font-size:12px
+}
+.sp-shell button.sp-card-image {
+  display:block;
+  width:100%;
+  padding:0;
+  border:0;
+  background:transparent;
+  margin:10px 0 14px;
+  overflow:hidden;
+  border-radius:12px
+}
+.sp-gallery {
+  margin:20px 0;
+  padding-bottom:20px;
+  border-bottom:1px solid #e3eaf2;
+  min-width:0
+}
+.sp-gallery h3 {
+  margin:0
+}
+.sp-gallery>.sp-between>span,.sp-photo-note {
+  font-size:12px;
+  color:#8293aa
+}
+.sp-gallery-main {
+  display:block!important;
+  width:100%;
+  padding:0!important;
+  margin:12px 0;
+  border:0!important;
+  background:transparent!important
+}
+.sp-gallery-main>span:last-child {
+  display:flex;
+  justify-content:center;
+  gap:7px;
+  color:#7186aa;
+  font-size:12px;
+  margin-top:8px
+}
+.sp-gallery-strip {
+  display:flex;
+  gap:8px;
+  overflow:auto;
+  padding:4px 2px
+}
+.sp-gallery-strip button {
+  padding:2px!important;
+  flex-shrink:0
+}
+.sp-image-viewer {
+  padding:0;
+  border:1px solid #dce4f0;
+  border-radius:15px;
+  width:min(1100px,94vw);
+  max-width:94vw;
+  max-height:94dvh;
+  background:white;
+  color:#172033;
+  box-shadow:0 20px 80px #17203350
+}
+.sp-image-viewer::backdrop {
+  background:#101827cc
+}
+.sp-image-viewer header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  padding:16px;
+  border-bottom:1px solid #e3eaf2
+}
+.sp-image-viewer header strong {
+  font-size:14px;
+  overflow-wrap:anywhere
+}
+.sp-image-viewer button {
+  padding:8px;
+  border:1px solid #dce4f0;
+  border-radius:8px;
+  background:white;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer
+}
+.sp-image-viewer button:disabled {
+  opacity:.4;
+  cursor:default
+}
+.sp-image-tools {
+  display:flex;
+  gap:12px;
+  align-items:center;
+  flex-wrap:wrap;
+  padding:12px 16px;
+  font-size:12px
+}
+.sp-image-tools a {
+  margin-left:auto;
+  color:#315dfa
+}
+.sp-image-stage {
+  max-height:75dvh;
+  overflow:auto;
+  background:#f4f6fa;
+  text-align:center;
+  padding:12px
+}
+.sp-image-stage img {
+  display:block;
+  object-fit:contain;
+  margin:0 auto;
+  max-width:none;
+  height:auto
+}
+.sp-image-stage p {
+  color:#8493a8;
+  font-size:12px
+}
+.sp-image-viewer:focus-visible,.sp-image-viewer button:focus-visible {
+  outline:3px solid #a5b6ff;
+  outline-offset:2px
+}
+@media(max-width:600px) {
+  .sp-image-tools {
+    gap:8px
+  }
+  .sp-image-viewer header strong {
+    max-width:75%
+  }
+  .sp-product-photo {
+    width:46px;
+    height:46px
+  }
+}
+.sp-preview-fallback {
+  height:45vh
+}
+.sp-product-photo.large.is-empty{height:80px;aspect-ratio:auto}.sp-product-photo.large.is-empty .sp-photo-fallback{flex-direction:row;gap:8px}
+.sp-photo-loading{position:absolute;inset:0;background:linear-gradient(110deg,#eef2f8,#fafbfe,#eef2f8);pointer-events:none}
+.sp-photo-loading+img{position:relative}
+.sp-auto-cover{margin:12px 0;padding:10px 14px;border:1px solid #e3eaf2;border-radius:10px;font-size:13px;overflow-wrap:anywhere}.sp-auto-cover p{margin:8px 0}.sp-auto-cover input{width:auto;margin-right:6px}
+.sp-gallery-prepare{margin:12px 0;padding:12px;border:1px solid #e3eaf2;border-radius:10px;overflow-wrap:anywhere;min-width:0}
+.sp-gallery-prepare label{display:block;margin:8px 0}.sp-gallery-prepare input[type=checkbox]{width:auto;margin-right:6px}.sp-gallery-prepare small{display:block;overflow-wrap:anywhere}

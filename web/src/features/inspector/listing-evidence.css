@@ -1,0 +1,40 @@
+.listing-evidence { min-width: 0; overflow-wrap: anywhere; }
+.listing-evidence .le-title-collapsed { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.listing-evidence .le-title-toggle { padding: 2px 0; margin-top: 5px; font-size: 11px; background: transparent; border: 0; color: #637798; min-height: 26px; }
+.listing-evidence .sp-gallery > .sp-product-photo.large { height: 96px; aspect-ratio: auto; }
+.listing-evidence .le-price { display: block; font-size: 26px; color: #172c4c; margin-top: 14px; }
+.listing-evidence .le-product-basics > p { margin: 6px 0; }
+.listing-evidence .le-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; color: #71829b; font-size: 12px; }
+.listing-evidence .le-meta span { background: #f3f6fb; border-radius: 6px; padding: 4px 8px; }
+.listing-evidence .le-product-basics > a { display: inline-block; margin-top: 12px; }
+.listing-evidence .le-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.listing-evidence .le-section-heading h3 { margin: 0; }
+.listing-evidence h4 { font-size: 12px; margin: 16px 0 8px; color: #253552; }
+.listing-evidence .le-ai { border: 1px solid #e1e8f4; border-radius: 12px; background: #f8faff; padding: 16px; margin-top: 22px; }
+.listing-evidence .le-ai > .le-section-heading { margin-bottom: 12px; }
+.listing-evidence .le-conclusion { font-size: 15px; color: #253552; }
+.listing-evidence .le-empty { border-radius: 9px; padding: 12px 14px; background: #f5f7fa; color: #71829b; font-size: 12px; line-height: 1.8; margin: 12px 0; }
+.listing-evidence .le-empty p { margin: 5px 0; }
+.listing-evidence .le-limit { font-size: 12px; line-height: 1.8; border-left: 3px solid #cbd6e8; padding: 8px 12px; background: #f0f4fa; color: #586d8b; }
+.listing-evidence .evidence-disclaimer { background: #f5f7fb; border-left-color: #cbd6e8; color: #64748b; }
+.listing-evidence .le-source { display: block; color: #71829b; font-size: 11px; margin: 4px 0; }
+.listing-evidence .le-judgments { padding-left: 18px; margin: 8px 0; }
+.listing-evidence .le-judgments > li { margin: 12px 0; }
+.listing-evidence .le-judgments p { margin: 5px 0; }
+.listing-evidence .le-judgments strong { font-size: 12px; }
+.listing-evidence .inspector-facts dt { min-width: 0; flex: 1; }
+.listing-evidence .inspector-facts dt small { display: block; font-size: 10px; color: #8898ad; line-height: 1.7; }
+.listing-evidence .inspector-facts dd { max-width: 60%; white-space: pre-wrap; }
+.listing-evidence details { margin-top: 12px; }
+.listing-evidence summary { cursor: pointer; color: #637798; line-height: 1.8; font-size: 12px; }
+.listing-evidence .le-diagnostics { color: #71829b; font-size: 12px; }
+.listing-evidence .le-description { max-height: 260px; overflow-y: auto; padding-right: 5px; }
+.listing-evidence .le-statements { padding-left: 18px; }
+.listing-evidence .le-statements > li { margin: 10px 0; }
+.listing-evidence .le-recommendation { font-size: 12px; color: #465e89; }
+.listing-evidence .le-conflicts { border-left: 3px solid #cbd6e8; padding-left: 10px; }
+.listing-evidence .le-active p { font-size: 12px; color: #71829b; }
+@media (max-width: 600px) {
+  .listing-evidence .le-ai { padding: 13px; }
+  .listing-evidence .inspector-facts > div { gap: 10px; }
+}

@@ -1,0 +1,19 @@
+@property --sp-ai-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.sp-ai-feedback { position: relative; isolation: isolate; padding: 15px 16px; margin: 14px 0; border: 1px solid #dce6f5; border-radius: 12px; background: #f8faff; min-height: 84px; transition: background-color .35s ease, border-color .35s ease; }
+.sp-ai-feedback[data-state=working]::before { content: ""; position: absolute; pointer-events: none; inset: -1px; border-radius: inherit; padding: 1px; background: conic-gradient(from var(--sp-ai-angle), transparent 0deg, transparent 220deg, #c9d9ff 275deg, #789cf5 315deg, transparent 360deg); mask: linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0); mask-composite: exclude; animation: sp-ai-edge 8s linear infinite; }
+.sp-ai-feedback[data-state=working] .sp-status svg { animation-duration: 2.8s; }
+.sp-ai-feedback[data-state=success] { background: #f5fbf9; border-color: #d2eae2; }
+.sp-ai-feedback[data-state=success] > div,.sp-ai-feedback[data-state=success] dl { animation: sp-ai-reveal .3s ease both; }
+.sp-ai-feedback[data-state=error] { background: #fff8f8; border-color: #f0d9db; }
+.sp-ai-feedback[data-state=notice] { background: #f8fafc; border-color: #e3e8ef; }
+.sp-shell .sp-ai-feedback p { font-size: 12px; color: #657992; margin: 9px 0 0; line-height: 1.8; }
+.sp-ai-feedback small { display: block; font-size: 11px; color: #7d8da4; margin-top: 8px; }
+.sp-ai-feedback .sp-actions { margin-top: 12px; }
+.sp-ai-feedback .sp-status { background: transparent; padding: 0; line-height: 1.7; }
+.sp-ai-feedback dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; font-size: 12px; margin: 12px 0 0; line-height: 1.8; }
+.sp-ai-feedback dt { color: #7d8da4; }
+.sp-ai-feedback dd { margin: 0; overflow-wrap: anywhere; color: #435775; white-space: pre-line; }
+.sp-ai-feedback :focus-visible { outline: 2px solid #9aafff; outline-offset: 3px; }
+@keyframes sp-ai-edge { to { --sp-ai-angle: 360deg; } }
+@keyframes sp-ai-reveal { from { opacity: .35; } to { opacity: 1; } }
+@media(prefers-reduced-motion: reduce) { .sp-ai-feedback { transition: none; } .sp-ai-feedback::before,.sp-ai-feedback .sp-status svg,.sp-ai-feedback > div,.sp-ai-feedback dl { animation: none !important; } }

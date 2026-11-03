@@ -1,0 +1,65 @@
+/* Small, scoped consistency fixes. Retain the existing two-column overview. */
+.sp-main:has(.ux2-products) .sp-heading{margin-bottom:12px}
+.sp-main:has(.ux2-products) .sp-heading p{margin-bottom:0}
+.ux2-products .sp-product-summary{margin-top:0}
+.ux2-products .ux-polish-toolbar{margin:12px 0 8px;gap:8px}
+.ux2-products .ux-polish-toolbar .sp-search{flex:1 1 250px;min-height:38px;height:38px;margin:0;border:1px solid var(--sp-line);transition:border-color .15s,box-shadow .15s}
+.sp-shell .ux2-products .sp-search input{border:0;border-radius:0;background:transparent;padding:7px 0;min-height:0;outline:none;box-shadow:none}
+.sp-shell .ux2-products .sp-search:focus-within{border-color:var(--sp-blue);box-shadow:0 0 0 3px #315dfa18}
+.sp-shell .ux2-products .sp-search input:focus-visible{outline:none;box-shadow:none}
+.sp-view-switch{display:inline-flex;align-items:center;gap:3px;border:1px solid #dce4f1;border-radius:10px;background:#eef2f7;padding:3px;flex-shrink:0}
+.sp-shell .sp-view-switch button{min-height:30px;padding:4px 11px;border:0;background:transparent;white-space:nowrap;font-size:12px;border-radius:7px}
+.sp-shell .sp-view-switch button[aria-pressed=true]{color:#244ccf;background:#fff;box-shadow:0 1px 4px #243c661a;font-weight:650}
+.sp-shell .sp-view-switch button:last-child{border-left:1px solid #d8e1f0}
+.ux2-filter-controls select{height:38px}
+.ux2-products .ux2-browser-meta{margin:8px 0}
+.ux2-products .sp-product-summary .sp-copy-help{margin:4px 0}
+
+/* A single disclosure marker and text indent at each respective content edge. */
+.sp-overview .sp-overview-more>summary,.sp-overview .sp-overview-disclosure>summary,:is(.sp-research-secondary,.sp-disclosure)>summary{display:flex;align-items:baseline;gap:8px;list-style:none;width:auto;margin:0;cursor:pointer;color:#526583;font-size:12px}
+.sp-overview .sp-overview-more>summary::-webkit-details-marker,.sp-overview .sp-overview-disclosure>summary::-webkit-details-marker,:is(.sp-research-secondary,.sp-disclosure)>summary::-webkit-details-marker{display:none}
+.sp-overview .sp-overview-more>summary::before,.sp-overview .sp-overview-disclosure>summary::before,:is(.sp-research-secondary,.sp-disclosure)>summary::before{content:'›';display:inline-block;width:12px;flex:0 0 12px;font-size:16px;line-height:1;transform-origin:center}
+.sp-overview details[open].sp-overview-more>summary::before,.sp-overview details[open].sp-overview-disclosure>summary::before,details[open]:is(.sp-research-secondary,.sp-disclosure)>summary::before{transform:rotate(90deg)}
+.sp-overview .sp-overview-more>summary{padding:16px 23px}
+.sp-overview .sp-overview-more>.sp-overview-runtime{padding-inline:23px}
+.sp-overview .sp-overview-disclosure>summary{padding:0}
+.sp-overview .sp-overview-more>summary>span{margin-left:0}
+
+.sp-main :is(.sp-research-secondary,.sp-disclosure){margin:12px 0;padding:0;border:1px solid var(--sp-card-border);border-radius:var(--sp-card-radius);background:var(--sp-card-background);color:var(--sp-muted);font-size:12px}
+.sp-main :is(.sp-research-secondary,.sp-disclosure)>summary{padding:16px 23px}
+.sp-main :is(.sp-research-secondary,.sp-disclosure)[open]>summary{margin-bottom:0;border-bottom:1px solid var(--sp-line)}
+.sp-main :is(.sp-research-secondary,.sp-disclosure)>.sp-panel{border:0;margin:0;padding:18px 23px}
+.sp-main :is(.sp-research-secondary,.sp-disclosure)>p{margin:12px 23px}
+.sp-main :is(.sp-research-secondary,.sp-disclosure)>button{margin:0 23px 16px}
+.sp-main :is(.sp-research-answer,.sp-research-history-card) .sp-report-content{max-width:var(--sp-reading-width)}
+.sp-research-featured{--sp-card-emphasis-background:linear-gradient(115deg,#f0f4ff,#fff 70%)}
+.sp-research-history-card .sp-between{align-items:center;gap:16px}
+.sp-shell .sp-research-history-card h3{margin:0;line-height:1.6}
+.sp-shell .sp-research-history-card>.sp-muted{font-size:12px;margin:8px 0 12px}
+.sp-shell .sp-research-history-card>.sp-report-content{font-size:13px;line-height:1.8;margin:8px 0 14px}
+.sp-history-filters{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:12px 0 16px}
+.sp-history-filters>span{font-size:12px;color:var(--sp-muted);margin-right:6px}
+.sp-shell .sp-history-filters button{min-height:32px;padding:4px 12px;font-size:12px;background:transparent;border-color:transparent}
+.sp-shell .sp-history-filters button[aria-pressed=true]{background:#eaf0ff;border-color:#d7e2ff;color:#244ccf;font-weight:650}
+.sp-shell .mt-controls .mt-restart-action:not(:disabled){color:#315dfa;border-color:#b9cbff;background:#f8faff;font-weight:600}
+.sp-shell .mt-controls .mt-restart-action:not(:disabled):hover{background:#eef3ff;border-color:#819ff9}
+.sp-heading .sp-actions>.sp-primary{min-height:38px;padding:8px 14px;font-size:13px}
+@media(max-width:600px){.sp-view-switch{max-width:100%}.sp-overview .sp-overview-more>summary{flex-wrap:wrap}.sp-overview .sp-overview-more>summary>span{margin:0 0 0 20px}}
+
+/* Shared header, navigation and disclosure conventions. */
+.sp-shell .sp-heading .sp-page-description{font-size:13px;line-height:1.7;color:var(--sp-muted);margin:6px 0 0}
+.sp-page-description a{color:var(--sp-blue);text-decoration:none}
+.sp-main:has(.ux2-shortlist) .sp-heading{margin-bottom:16px}
+.sp-project-nav-section{display:flex;flex-direction:column;gap:5px}
+.sp-project-nav-section+.sp-project-nav-section{border-top:1px solid var(--sp-line);margin-top:10px;padding-top:14px}
+.sp-nav-subheading{padding:2px 12px 5px;font-size:11px;line-height:1.6;color:var(--sp-muted)}
+.ux2-products .ux-polish-toolbar .sp-search{flex:1 1 240px;max-width:none;min-width:190px}
+.ux2-products .ux2-filter-controls select{max-width:170px}
+.ux2-products .ux2-field-picker{flex:0 0 100px;min-width:100px;margin-left:auto}
+.ux2-products .ux2-field-picker>summary{display:flex;align-items:center;justify-content:center;white-space:nowrap;width:100%}
+.sp-main .sp-disclosure>label{display:flex;align-items:center;gap:8px;margin:14px 23px}
+.ux2-shortlist .ux2-list-context{padding:20px 24px}
+.ux2-shortlist .ux2-list-context h2{font-size:16px;margin:0 0 8px}
+.ux2-shortlist .ux2-origin-tags .ux2-tag:not(.ux2-tag-warn){color:#405678;background:#edf2f8;border:1px solid #dce4ef;font-size:11px}
+.ux2-shortlist .ux2-candidate-title small{display:table;color:#405678;background:#f0f4f8;border:1px solid #dfe6ef;border-radius:5px;font-size:11px;font-weight:500;padding:1px 6px;margin-bottom:6px}
+@media(max-width:768px){.sp-project-nav-section{display:contents}.sp-nav-subheading{display:none}}

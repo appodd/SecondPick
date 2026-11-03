@@ -1,0 +1,113 @@
+.sp-monitor-activity {
+  margin:18px 0;
+  border-top:1px solid #e3eaf2;
+  padding-top:15px
+}
+.sp-monitor-log-overlay > .app-shell__drawer-trigger {
+  display: none;
+}
+.sp-monitor-metrics {
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px 24px;
+  font-size:12px;
+  color:#71829b
+}
+.sp-monitor-metrics b {
+  color:#253552
+}
+.sp-monitor-activity .monitor-diagnostics {
+  font-size:12px;
+  color:#71829b
+}
+.sp-monitor-activity ol {
+  padding-left:20px;
+  margin:12px 0
+}
+.sp-monitor-activity li {
+  margin:7px 0;
+  overflow-wrap:anywhere
+}
+.sp-log-detail {
+  padding:24px;
+  min-width:0;
+  color:#172033;
+  font-size:13px;
+  line-height:1.8
+}
+.sp-log-detail h2 {
+  font-size:18px;
+  margin:0 0 8px
+}
+.sp-log-detail>p,.sp-log-note {
+  color:#7e8fa8;
+  font-size:12px
+}
+.sp-log-detail .monitor-console {
+  margin-bottom:22px
+}
+.sp-log-detail details {
+  border-top:1px solid #e3eaf2;
+  padding:15px 0
+}
+.sp-log-detail summary {
+  cursor:pointer;
+  font-weight:650
+}
+.sp-log-detail .monitor-actions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  align-items:center
+}
+.sp-log-detail input[type=checkbox] {
+  accent-color:#315dfa
+}
+.sp-log-detail button {
+  font:inherit;
+  cursor:pointer;
+  padding:7px 11px;
+  border:1px solid #dfe6f1;
+  border-radius:9px;
+  background:white;
+  color:#536680
+}
+.sp-log-detail select {
+  width:100%;
+  min-width:0;
+  border:1px solid #dfe6f1;
+  background:white;
+  color:#536680;
+  border-radius:9px
+}
+.sp-log-detail .monitor-actions>label:first-child {
+  width:100%
+}
+.sp-log-detail .monitor-console pre {
+  max-height:48dvh;
+  min-height:180px;
+  background:#142033;
+  color:#d7e5f4;
+  border:1px solid #263a55;
+  border-radius:11px;
+  line-height:1.8;
+  scrollbar-color:#536682 #142033
+}
+.sp-log-detail .monitor-diagnostics li {
+  overflow-wrap:anywhere
+}
+.sp-log-detail .scoped-error {
+  color:#ad4a44
+}
+.sp-log-detail :focus-visible {
+  outline:3px solid #a5b6ff;
+  outline-offset:3px
+}
+@media(max-width:600px) {
+  .sp-log-detail {
+    padding:18px
+  }
+  .sp-monitor-metrics {
+    gap:8px 16px
+  }
+}

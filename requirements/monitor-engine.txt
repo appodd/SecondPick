@@ -1,0 +1,11 @@
+# Direct dependencies for the pinned f85 collection runtime, not its Web server.
+playwright==1.62.0
+python-dotenv==1.2.4
+requests==2.34.2
+openai==3.35.1
+pydantic-settings==2.16.0
+aiofiles==25.1.0
+python-socks==3.1.1
+httpx[socks]==0.28.1
+Pillow==13.0.0
+tzdata==2026.5

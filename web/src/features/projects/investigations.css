@@ -1,0 +1,8 @@
+.sp-investigations { margin-block: 20px; min-width: 0; }
+.sp-investigations .sp-between { gap: 12px; flex-wrap: wrap; }
+.sp-investigations h2 { font-size: 1.05rem; margin: 0; }
+.sp-investigation-row { padding-block: 16px; border-top: 1px solid var(--border, #e5eaf2); overflow-wrap: anywhere; }
+.sp-investigation-row p { margin-block: 8px; }
+.sp-investigation-row .sp-actions { flex-wrap: wrap; gap: 8px; margin-block: 12px; }
+.sp-investigation-row small { color: #8290a6; }
+@media (max-width: 600px) { .sp-investigations button { white-space: normal; max-width: 100%; } .sp-investigations .sp-between { align-items: flex-start; } }

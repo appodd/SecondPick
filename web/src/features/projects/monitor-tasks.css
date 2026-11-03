@@ -1,0 +1,73 @@
+.mt-list-panel { padding: 22px; }
+.mt-outcome { display: flex; flex-wrap: wrap; gap: 12px 32px; margin: 14px 0; }
+.mt-outcome dt { color: #71829b; font-size: 11px; }
+.mt-outcome dd { margin: 3px 0 0; color: #253552; font-size: 20px; font-weight: 650; }
+.sp-research-answer .sp-report-content { font-size: 14px; line-height: 1.85; overflow-wrap: anywhere; }
+.mt-list-panel h2 { font-size: 18px; }
+.mt-task-count { border-radius: 20px; background: #f1f4f8; color: #64748b; padding: 4px 10px; font-size: 11px; white-space: nowrap; }
+.mt-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap; margin: 16px 0 20px; }
+.mt-summary { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 11px; color: #7d8ea6; margin: 0; }
+.mt-toolbar a { font-size: 12px; }
+.mt-task-list { display: grid; gap: 12px; }
+.mt-task-row { padding: 17px 18px 14px; border: 1px solid var(--sp-card-border); border-radius: var(--sp-card-radius); background: var(--sp-card-background); min-width: 0; }
+.mt-row-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.sp-shell button.mt-task-name { display: flex; flex: 1; gap: 14px; justify-content: space-between; align-items: center; padding: 0; border: 0; background: transparent; text-align: left; font-size: 15px; font-weight: 700; color: #253552; line-height: 1.6; min-width: 0; overflow-wrap: anywhere; }
+.sp-shell p.mt-keyword { font-size: 12px; color: #7d8da4; margin: 6px 0 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mt-row-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 15px; color: #71829b; font-size: 11px; }
+.mt-row-meta .sp-status { font-size: 11px; padding: 3px 7px; }
+.mt-recent { display: flex; gap: 8px 18px; flex-wrap: wrap; border-top: 1px solid #edf1f6; padding-top: 10px; margin-top: 12px; font-size: 11px; color: #8898ad; line-height: 1.8; }
+.mt-row-actions { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.mt-row-actions button { font-size: 11px; padding: 6px 10px; }
+.sp-shell .mt-row-actions button{min-height:32px;box-sizing:border-box}
+.mt-controls { min-width: 0; }
+.mt-monitor-switch-control { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; }
+.sp-shell button.mt-monitor-switch { display: inline-flex; align-items: center; justify-content: flex-start; box-sizing: border-box; width: 36px; height: 22px; min-height: 22px; flex-shrink: 0; border: 0; border-radius: 20px; padding: 3px; background: #b5c0d1; cursor: pointer; }
+.sp-shell button.mt-monitor-switch[aria-checked=true] { background: var(--sp-blue); }
+.mt-monitor-switch > span { width: 16px; height: 16px; border-radius: 50%; background: #fff; transform: translateX(0); transition: transform 150ms ease; }
+.mt-monitor-switch[aria-checked=true] > span { transform: translateX(14px); }
+.sp-shell button.mt-monitor-switch:disabled { opacity: .55; cursor: not-allowed; }
+.mt-monitor-switch:focus-visible { outline: 2px solid var(--sp-blue); outline-offset: 3px; }
+.mt-monitor-switch-label { font-size: 12px; color: #50627d; }
+@media(prefers-reduced-motion:reduce) { .mt-monitor-switch > span { transition: none; } }
+.mt-controls > p { font-size: 11px; margin:8px 0 0;line-height:1.7 }
+.mt-controls .mt-error-link{display:inline-block;margin-left:8px;color:var(--sp-blue);text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.mt-source-note { margin-top: 18px; color: #8898ad; font-size: 11px; }
+.mt-source-note > summary { cursor: pointer; }
+.mt-source-note p { font-size: 11px; }
+.mt-empty { text-align: center; padding: 30px 15px; color: #7d8ea6; font-size: 13px; }
+.mt-detail-overlay > .app-shell__drawer-trigger { display: none; }
+.sp-shell .mt-detail-overlay .responsive-drawer { width: min(700px,100%); }
+.sp-shell .sp-monitor-log-overlay .responsive-drawer { width: min(780px,100%); }
+.mt-detail { padding: 24px; min-width: 0; overflow-wrap: anywhere; }
+.mt-detail h2 { font-size: 19px; margin: 0; }
+.mt-detail h3 { font-size: 14px; margin: 0 0 12px; }
+.mt-detail h4 { font-size: 13px; margin: 0; }
+.mt-detail > section { border-top: 1px solid #e3eaf2; padding-top: 22px; margin-top: 22px; }
+.mt-detail button { font-size: 12px; }
+.mt-rules { margin: 10px 0; font-size: 12px; }
+.mt-rules > div { display: flex; justify-content: space-between; gap: 18px; padding: 9px 0; border-bottom: 1px solid #eef2f7; }
+.mt-rules dt { color: #7d8ea6; }
+.mt-rules dd { margin: 0; text-align: right; color: #253552; max-width: 65%; overflow-wrap: anywhere; }
+.mt-run-list { display: grid; gap: 8px; margin-top: 14px; }
+.sp-shell button.mt-run-select { display: flex; align-items: center; gap: 12px; justify-content: space-between; width: 100%; text-align: left; padding: 12px; border: 1px solid #e3eaf2; background: #fff; }
+.sp-shell button.mt-run-select[aria-pressed=true] { background: #f5f7ff; border-color: #bacbfa; }
+.mt-run-select > span:first-child { display: flex; flex: 1; flex-direction: column; gap: 6px; }
+.mt-run-select strong { font-size: 12px; color: #253552; }
+.mt-run-select small,.mt-detail .sp-between > small { color: #8898ad; font-size: 10px; }
+.mt-selected-run { padding: 16px; border: 1px solid #e1e8f4; border-radius: 10px; margin-top: 16px; background: #fbfcff; }
+.mt-selected-run p { font-size: 12px; line-height: 1.8; }
+.mt-detail details { margin-top: 15px; font-size: 12px; }
+.mt-detail summary { cursor: pointer; color: #637798; }
+.mt-detail .monitor-diagnostics { font-size: 12px; color: #71829b; }
+.mt-detail .monitor-diagnostics ol { padding-left: 20px; }
+.mt-detail .monitor-diagnostics li { margin: 8px 0; overflow-wrap: anywhere; }
+.mt-log-context { padding: 12px; background: #f3f6fb; border-radius: 10px; margin: 16px 0; }
+.mt-log-context p { margin-bottom: 0; font-size: 11px; color: #7d8ea6; }
+@media(max-width:600px) {
+  .mt-list-panel { padding: 16px; }
+  .mt-task-row { padding: 14px; }
+  .mt-row-heading { gap: 10px; flex-wrap: wrap; }
+  .mt-row-heading > .sp-status { margin-left: 0; }
+  .mt-detail { padding: 18px; }
+  .sp-shell button.mt-run-select { flex-wrap: wrap; gap: 8px; }
+}

@@ -1,0 +1,32 @@
+import {expect,test} from '@playwright/test';
+test('P2 paused changes, completed item, report pending, scoped drawer without model actions',async({page},info)=>{
+ let completed=false,writes=0;
+ page.on('request',r=>{if(r.method()!=='GET' && /\/(studies|investigations|research)\b/.test(r.url()))writes++;});
+ await page.route('**/api/projects/10/overview',async route=>{
+  const data=await (await route.fetch()).json();const id=data.cards[0].listing_id;
+  data.policy.paused=1;
+  data.report={...(data.report ?? {id:1,study_id:1,content:'隔离 Mock 有限报告',candidate_ids_json:JSON.stringify([id]),snapshot_at:'2026-10-24T00:00:00Z',created_at:'2026-10-24T00:00:00Z',limited:1}),evidence_current:false};
+  data.evidence_work={gate:'paused',reason:'研究已暂停；保留新证据，不启动模型',batch_limit:3,listing_ids:completed?[]:[id],items:completed?[]:[{listing_id:id,state:'priority',reason:'新增完整描述及商品属性；历史候选值得复评',study_id:null,previous:{study_id:1,assessment:{summary:'旧判断缺少详情证据',conclusion:'insufficient_evidence'}},delta:{fields:['description','attributes'],before:{description:''},after:{description:'卖家自述，未核实'}}}]};
+  data.integration_work={state:completed?'pending':'none',reason:completed?'重要商品判断变化，报告待整合':'尚未复评',listing_ids:[id],updates:completed?[{item:{listing_id:id},study_id:53,assessment:{summary:'根据新增证据修正判断，机况仍未知'}}]:[]};
+  await route.fulfill({json:data});
+ });
+ await page.goto('/projects/10?view=research');
+ let section=page.getByRole('region',{name:'新证据与有限复评'});
+ await expect(section.getByText(/研究已暂停/)).toBeVisible();
+ await section.getByText('查看变化、旧判断与复评原因').click();
+ await expect(section.getByText(/值得优先复评/)).toBeVisible();
+ await section.scrollIntoViewIfNeeded();await page.screenshot({path:info.outputPath('p2-paused.png')});
+ completed=true;await page.reload();section=page.getByRole('region',{name:'新证据与有限复评'});
+ await expect(section.getByText(/重要商品判断变化，报告待整合/)).toBeVisible();
+ await section.getByText('查看已完成的新判断（保留历史）').click();
+ await expect(section.getByText(/根据新增证据修正判断/)).toBeVisible();
+ await page.goto('/projects/10?view=overview');
+ await expect(page.getByRole('heading',{name:'原快照研究判断（证据已更新）',exact:true})).toBeVisible();
+ await page.goto('/projects/10?view=shortlist');
+ await expect(page.getByRole('heading',{name:'原报告候选（新证据待整合）',exact:true})).toBeVisible();
+ await page.goto('/projects/10?view=products');await page.locator('button.sp-product-cell').first().click();
+ const drawer=page.getByRole('dialog',{name:'商品与卖家证据'});
+ await expect(drawer.getByRole('region',{name:'新证据与有限复评'})).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+ expect(writes).toBe(0);
+});

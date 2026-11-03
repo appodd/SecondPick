@@ -1,0 +1,91 @@
+.sp-project-list > a > strong { display: block; font-size: 12px; line-height: 1.7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-project-list > a.active > strong{cursor:text}
+.sp-project-renaming{padding:10px 12px;border:1px solid #e0e8ff;border-radius:10px;background:#eff3ff}
+.sp-project-name-editor{min-width:0}
+.sp-shell .sp-project-name-editor input{width:100%;min-width:0;padding:4px 6px;font-size:12px;line-height:1.7;border:1px solid var(--sp-blue);border-radius:5px;background:#fff;color:var(--sp-text,#172033)}
+.sp-project-name-editor small{display:block;margin-top:5px;font-size:10px;line-height:1.5;color:var(--sp-muted)}
+.sp-project-name-editor [role=alert]{color:#b54738}
+.sp-project-runtime-badges { display: flex; gap: 5px 8px; flex-wrap: wrap; margin-top: 7px; }
+.sp-project-runtime-badges .sp-status { padding: 0; background: transparent; font-size: 10px; gap: 4px; }
+.sp-project-runtime-badges .sp-status svg { width: 11px; height: 11px; }
+.sp-shell button.sp-runtime-more { font-size: 10px; padding: 5px 8px; }
+.sp-nav-group { border-top: 1px solid var(--sp-line); padding-top: 10px; margin-top: 6px; }
+.sp-nav-group .sp-side-label { margin-top: 0; letter-spacing: 0; }
+.sp-side .sp-nav-group nav button { width: 100%; min-height: 40px; color: #64748b; border-radius: 10px; font-weight: 500; }
+.sp-side .sp-nav-group nav button svg { flex-shrink: 0; stroke-width: 1.8; }
+.sp-side .sp-nav-group nav button:hover { background: #f0f4fa; }
+.sp-side .sp-nav-group nav button.active { color: #315dfa; background: #ebefff; font-weight: 650; }
+.sp-side .sp-nav-group nav button:focus-visible { outline: 2px solid #315dfa; outline-offset: 2px; }
+.sp-runtime-note { color: #8898ad; font-size: 10px; margin: 0; }
+.sp-workspace-runtime > .app-shell__drawer-trigger { display: none; }
+.sp-shell .sp-workspace-runtime .responsive-drawer { width: min(900px,100%); }
+.sp-runtime-body { padding: 24px; font-size: 12px; color: #71829b; line-height: 1.8; }
+.sp-runtime-body > p { margin-top: 0; }.sp-runtime-body button { font-size: 11px; }
+.sp-runtime-project { border: 1px solid #e3eaf2; border-radius: 12px; margin: 18px 0; padding: 18px; background: #fff; }
+.sp-runtime-project h3 { font-size: 15px; margin: 0 0 14px; }.sp-runtime-project h3 a { color: #253552; }
+.sp-runtime-project h4 { font-size: 12px; margin: 0 0 12px; color: #536680; }
+.sp-runtime-columns { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; }
+.sp-runtime-columns > section { min-width: 0; overflow-wrap: anywhere; }.sp-runtime-columns .sp-execution { margin: 10px 0; padding: 12px; }
+.sp-runtime-columns .sp-execution p { font-size: 11px; }.sp-runtime-meta { font-size: 11px; }
+.sp-runtime-active { display: grid; gap: 10px; margin: 10px 0; }.sp-runtime-active > div { border-top: 1px solid #edf1f6; padding-top: 10px; }.sp-runtime-active .sp-execution { border: 0; background: transparent; padding: 0; }
+.sp-runtime-active p { font-size: 11px; color: #8898ad; }.sp-runtime-active .sp-status { font-size: 10px; }
+.sp-runtime-body details { border-top: 1px solid #e3eaf2; margin-top: 20px; padding-top: 15px; font-size: 11px; }.sp-runtime-body summary { cursor: pointer; }
+@media(max-width:700px) { .sp-runtime-body { padding: 16px; }.sp-runtime-columns { grid-template-columns: 1fr; }.sp-runtime-project { padding: 14px; }.sp-project-runtime-badges { white-space: normal; }.sp-nav-group { margin-top: 0; padding-top: 6px; }.sp-side .sp-nav-group nav button { width: auto; flex-shrink: 0; min-height: 36px; }.sp-side .sp-nav-group .sp-side-label { display: block; font-size: 10px; padding: 2px 0 5px; }.sp-side .sp-nav-group nav[aria-label="全局工作空间"] svg { display: block; } }
+
+/* Projects keep their natural size and only shrink when needed; the footer absorbs spare space. */
+@media(min-width:769px) {
+  .sp-side { min-height: 0; overflow: hidden; }
+  .sp-side > .sp-project-entry, .sp-side > .sp-nav-group, .sp-side > .ss-sidebar-bottom { flex: 0 0 auto; min-width: 0; }
+  .sp-project-entry { display: flex; flex-direction: column; gap: 8px; }
+  .sp-side > .sp-project-region { display: flex; flex-direction: column; flex: 0 1 auto; min-height: 0; min-width: 0; overflow: hidden; }
+  .sp-project-region > p { flex-shrink: 0; margin: 4px 0; }
+  .sp-project-region .sp-project-list { flex: 0 1 auto; min-height: 0; max-height: none; overflow-y: auto; overflow-x: hidden; overscroll-behavior-y: contain; scrollbar-gutter: stable; margin: 0; padding: 2px; scroll-padding-block: 3px; }
+  .sp-project-list a { border: 1px solid transparent; }
+  .sp-project-list:focus-visible { outline-offset: -2px; }
+  .sp-project-list a:focus-visible { outline-offset: -3px; }
+  .sp-project-list .sp-runtime-more { width: 100%; margin-top: 5px; }
+  .sp-side > .ss-sidebar-bottom { margin-top: auto; }
+}
+@media(min-width:769px) and (max-height:820px) {
+  .sp-side { padding-block: 10px; gap: 5px; }
+  .sp-project-entry { gap: 4px; }.sp-project-entry .sp-side-label { margin-top: 0; padding-block: 2px 4px; }
+  .sp-side .sp-nav-group { margin-top: 2px; padding-top: 5px; }
+  .sp-side .sp-nav-group .sp-side-label { padding-block: 2px 4px; }
+  .sp-side .sp-nav-group nav { gap: 2px; }
+  .sp-side .sp-nav-group nav button { min-height: 34px; padding-block: 6px; }
+  .sp-side .sp-legacy { padding-block: 8px; }
+  .sp-side > .ss-sidebar-bottom { padding-top: 5px; }.sp-side .ss-side-link { padding-block: 7px; }
+  .sp-side .sp-side-foot { margin-block: 4px; }
+}
+/* At very low heights, allow the rail itself to scroll rather than hiding navigation. */
+@media(min-width:769px) and (max-height:600px) {
+  .sp-side { overflow-y: auto; overscroll-behavior-y: contain; }
+  .sp-side { scroll-padding-bottom: 85px; }
+  .sp-side > .ss-sidebar-bottom { position: sticky; bottom: -10px; z-index: 2; background: #fbfcff; padding-bottom: 6px; }
+  .sp-side > .sp-project-entry { position: sticky; top: -10px; z-index: 2; background: #fbfcff; padding-block: 5px; }
+  .sp-side > .sp-project-region { flex: 0 0 auto; max-height: 35dvh; }
+  .sp-project-region .sp-project-list { flex: 0 1 auto; }
+}
+@media(max-width:768px) {
+  .sp-project-entry { display: flex; flex-direction: column; gap: 6px; }
+  .sp-project-region { min-width: 0; }.sp-project-region:empty { display: none; }
+}
+
+/* Keep the project and its views in reach without a full desktop rail above
+   every mobile screen. Less frequent destinations remain in an explicit menu. */
+@media(max-width:768px) {
+  .sp-shell button.sp-mobile-tools { display: inline-flex; min-height: 36px; padding: 6px 10px; font-size: 12px; }
+  .sp-side .sp-project-entry { flex-direction: row; gap: 8px; align-items: center; }
+  .sp-project-entry .sp-mobile-project { flex: 1; width: 0; min-width: 0; margin: 0; }
+  .sp-side .sp-project-entry .sp-new { width: auto; flex-shrink: 0; margin: 0; font-size: 11px; padding: 6px 8px; }
+  .sp-side .sp-project-entry .sp-side-label,.sp-side .sp-nav-group .sp-side-label { display: none; }
+  .sp-side > .sp-nav-group[aria-labelledby="workspace-nav-label"],.sp-side > .ss-sidebar-bottom,.sp-side .sp-legacy { display: none; }
+  .sp-side.sp-mobile-expanded > .sp-nav-group[aria-labelledby="workspace-nav-label"],.sp-side.sp-mobile-expanded > .ss-sidebar-bottom,.sp-side.sp-mobile-expanded .sp-legacy { display: block; }
+  .sp-side .sp-nav-group { border: 0; margin: 0; padding: 5px 0 0; }
+  .sp-side .sp-nav-group nav { gap: 3px; }
+  .sp-side .sp-nav-group nav button { padding: 7px 9px; min-height: 38px; }
+  .sp-side.sp-mobile-expanded .ss-sidebar-bottom { margin: 0; padding: 5px 0; }
+  .sp-main { padding-top: 18px; }
+  .sp-breadcrumb { font-size: 10px; margin-bottom: 14px; }
+  .sp-heading { gap: 10px; margin-bottom: 18px; }
+}
