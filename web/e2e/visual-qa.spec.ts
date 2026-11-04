@@ -36,7 +36,7 @@ test("visual QA captures release viewports without overflow", async ({ page }, t
   for (const viewport of [
     { width: 1440, height: 900, name: "desktop-1440x900" },
     { width: 1024, height: 768, name: "tablet-1024x768" },
-    { width: 390, height: 844, name: "mobile-390x844" },
+    { width: 1280, height: 900, name: "desktop-1280x900" },
   ]) {
     await page.setViewportSize(viewport);
     await page.goto("/tasks/1");
@@ -86,27 +86,6 @@ test("visual QA captures release viewports without overflow", async ({ page }, t
       path: path.join(screenshotDir, `${viewport.name}.png`),
     });
 
-    if (viewport.width === 390) {
-      await page.getByRole("button", { name: "查看任务" }).click();
-      await expect(page.getByRole("dialog", { name: "研究任务" })).toBeVisible();
-      await page.screenshot({
-        path: path.join(screenshotDir, "mobile-390x844-task-drawer.png"),
-      });
-      await page.getByRole("button", { name: "关闭研究任务" }).click();
-      // The conversation owns its collapsed state; reopen after returning from navigation.
-      if (!(await excerpt.evaluate(element => (element as HTMLDetailsElement).open))) await excerpt.locator(":scope > summary").click();
-      await cardButtons.first().click();
-      const evidenceDrawer = page.getByRole("dialog", { name: "上下文检查器" });
-      await expect(evidenceDrawer).toContainText("详情属性未独立验证");
-      const drawerBox = await evidenceDrawer.boundingBox();
-      expect(drawerBox).not.toBeNull();
-      expect(drawerBox!.x).toBeGreaterThanOrEqual(0);
-      expect(drawerBox!.x + drawerBox!.width).toBeLessThanOrEqual(viewport.width);
-      await page.screenshot({
-        path: path.join(screenshotDir, "mobile-390x844-evidence-drawer.png"),
-      });
-    }
-
     await page.goto("/tasks/1?tab=candidates");
     await expect(
       page.getByRole("searchbox", { name: "搜索标题或 listing ID" }),
@@ -118,7 +97,7 @@ test("visual QA captures release viewports without overflow", async ({ page }, t
     });
 
     await page.goto("/tasks/1?tab=market");
-    await expect(page.getByText("下四分位")).toBeVisible();
+    await expect(page.getByText("下四分位").first()).toBeVisible();
     await expect(page.getByRole("table", { name: "地区分布数据" })).toBeVisible();
     await expect(page.getByRole("table", { name: "每轮新增候选" })).toBeVisible();
     await assertNoPageOverflow(page);
@@ -128,12 +107,11 @@ test("visual QA captures release viewports without overflow", async ({ page }, t
   }
 });
 
-test("computed breakpoint styles match 767 768 1179 and 1180", async ({ page }, testInfo) => {
+test("computed desktop window breakpoint styles match 1024 1179 and 1180", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop-chromium", "single-browser breakpoint QA");
 
   for (const [width, expectedLayout, expectedColumns] of [
-    [767, "mobile", 1],
-    [768, "tablet", 2],
+    [1024, "tablet", 2],
     [1179, "tablet", 2],
     [1180, "desktop", 2],
   ] as const) {

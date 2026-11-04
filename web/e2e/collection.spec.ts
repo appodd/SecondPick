@@ -6,6 +6,7 @@ async function login(page: Page) {
   await expect(page.getByRole("button", { name: "我已登录，验证连接" })).toBeEnabled();
   await page.reload();
   await page.getByRole("button", { name: "我已登录，验证连接" }).click();
+  await expect.poll(async () => (await (await page.request.get('/api/browser/status')).json()).active_job).toBeNull();
   await expect(page.locator(".ss-panel-title .ss-badge")).toHaveText("已验证");
 }
 async function prepare(page: Page, query: string) {

@@ -84,7 +84,7 @@ test("market overview exposes numeric table values", async ({ page }) => {
   await expect(distribution).toBeVisible();
   await expect(distribution.getByRole("cell", { name: "¥5,101" })).toBeVisible();
   await expect(distribution.getByRole("cell", { name: "1", exact: true }).first()).toBeVisible();
-  await expect(page.getByText("目标地区覆盖 55 / 55（100.0%）")).toBeVisible();
+  await expect(page.getByRole("table",{name:"地区分布数据"})).toContainText("上海");
   await expect(page.getByRole("table", { name: "每轮新增候选" })).toBeVisible();
   await expect(page.getByText("停止条件").locator("..")).toContainText("collecting");
 });
@@ -97,29 +97,13 @@ test("research and debug views preserve task and selected listing", async ({ pag
   await expect(page.getByRole("heading", { name: "调试视图" })).toBeVisible();
   await page.getByRole("button", { name: "研究视图" }).click();
   await expect(page).toHaveURL(/listing=1/);
-  await expect(page.getByText("ThinkPad X1 Carbon #01", { exact: false }).last()).toBeVisible();
-});
-
-test("mobile evidence opens in a drawer and closes without overlap", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== "mobile-chromium", "mobile-only drawer contract");
-  await page.goto("/tasks/1?tab=candidates");
-  await page.getByRole("button", { name: /ThinkPad X1 Carbon #01/ }).click();
-
-  const drawer = page.getByRole("dialog", { name: "上下文检查器" });
-  await expect(drawer).toBeVisible();
-  const box = await drawer.boundingBox();
-  expect(box).not.toBeNull();
-  expect(box!.x).toBeGreaterThanOrEqual(0);
-  expect(box!.x + box!.width).toBeLessThanOrEqual(390);
-  await page.getByRole("button", { name: "关闭上下文检查器" }).click();
-  await expect(drawer).toBeHidden();
-  await expect(page).toHaveURL(/^(?!.*context=open).*$/);
+  await expect(page.locator("#listing-evidence-title")).toHaveText("ThinkPad X1 Carbon #01");
 });
 
 test("settings separate Codex CLI authentication and runtime states", async ({ page }) => {
   await page.goto("/settings?section=codex");
   await expect(page.getByRole("heading", { name: "AI 研究驱动", exact: true })).toBeVisible();
-  await expect(page.getByText("Codex CLI", { exact: true })).toBeVisible();
+  await expect(page.getByText("CLI 检测", { exact: true })).toBeVisible();
   await expect(page.getByText("版本与当前运行状态", { exact: true })).toBeVisible();
   await expect(page.locator(".ss-row").filter({ hasText: "版本与当前运行状态" }).getByText("未知", { exact: true })).toBeVisible();
 });
@@ -189,33 +173,4 @@ test("desktop columns scroll independently and evidence heading stays visible", 
   await expect(page.locator("#task-overview-title")).toBeVisible();
   expect(await main.evaluate(element => element.scrollTop)).toBe(mainPosition);
   expect(await inspector.evaluate(element => element.scrollTop)).toBe(0);
-});
-
-test("mobile evidence drawer scrolls internally while its header and background stay fixed", async ({ page }, info) => {
-  test.skip(info.project.name !== "mobile-chromium", "mobile drawer scroll contract");
-  await page.goto("/tasks/1?tab=candidates");
-  const main = page.getByRole("main");
-  await main.evaluate(element => element.scrollTo(0, 200));
-  await page.getByRole("button", { name: /ThinkPad X1 Carbon #01/ }).click();
-  const drawer = page.getByRole("dialog", { name: "上下文检查器" });
-  await expect(drawer).toBeVisible();
-  const content = drawer.locator(".responsive-drawer__content");
-  // Opening the drawer precedes the asynchronous evidence response. Wheel over
-  // a short loading placeholder is consumed before there is anything to scroll.
-  await expect(drawer.getByRole("heading", { name: "ThinkPad X1 Carbon #01", exact: true })).toBeVisible();
-  await expect.poll(() => content.evaluate(element => element.scrollHeight - element.clientHeight)).toBeGreaterThan(50);
-  await expect(drawer.getByRole("button", { name: "关闭商品证据" })).toBeHidden();
-  const header = drawer.locator(".responsive-drawer__header");
-  const headerBefore = await header.boundingBox();
-  const mainBefore = await main.evaluate(element => element.scrollTop);
-  await content.hover({ position: { x: 100, y: 350 } });
-  await page.mouse.wheel(0, 800);
-  await expect.poll(() => content.evaluate(element => element.scrollTop)).toBeGreaterThan(50);
-  expect(await header.boundingBox()).toEqual(headerBefore);
-  expect(await main.evaluate(element => element.scrollTop)).toBe(mainBefore);
-  await expect(drawer.getByRole("button", { name: "关闭上下文检查器" })).toBeVisible();
-  await page.screenshot({ path: info.outputPath("drawer-independent-scroll.png") });
-  await drawer.getByRole("button", { name: "关闭上下文检查器" }).click();
-  expect(await main.evaluate(element => element.scrollTop)).toBe(mainBefore);
-  await expect(drawer).toBeHidden();
 });

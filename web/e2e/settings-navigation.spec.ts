@@ -9,7 +9,9 @@ test("technical default city is explained and legacy city requires confirmation 
   });
   await page.goto("/projects/10?view=overview");
   await expect(page.getByRole("note")).toContainText("来源待确认");
-  await page.getByRole("button", { name: "调整选购条件", exact: true }).click();
+  await page.getByRole("link",{name:"调整目标 →",exact:true}).click();
+  await page.getByRole("button",{name:"直接手动修改",exact:true}).click();
+  await page.getByText("地区条件说明",{exact:true}).click();
   await expect(page.getByText(/历史城市记录为「上海」/)).toBeVisible();
   await expect(page.getByRole("textbox", { name: "保留的硬条件（每行一项）", exact: true })).not.toHaveValue(/上海/);
   await expect(page.getByRole("textbox", { name: "软偏好（每行一项）", exact: true })).not.toHaveValue(/上海/);
@@ -44,7 +46,7 @@ test("settings preserves the mounted workspace rail, selected project, source an
   await expect(rail.getByRole("navigation", { name: "当前项目", exact: true }).locator('[aria-current="page"]')).toHaveCount(0);
   await expect(rail.locator('[data-runtime-project="10"] .sp-status')).toHaveCount(2);
   await expect(page.locator(".ss-welcome")).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "重新运行配置向导", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "使用引导", exact: true })).toBeVisible();
   await page.getByRole("navigation", { name: "系统配置", exact: true }).getByRole("button", { name: "闲鱼账户", exact: true }).click();
   await page.reload();
   await expect(rail.locator('[data-runtime-project="10"]')).toHaveClass("active");
@@ -102,8 +104,8 @@ test("unfinished setup is prominent inside settings, while completed setup keeps
   });
   await page.goto("/settings");
   await expect(page).toHaveURL(/\/settings$/);
-  await expect(page.getByRole("heading", { name: "开始一段更聪明的选购研究", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "准备你的选购工作台", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "继续首次配置 →", exact: true }).click();
   await expect(page).toHaveURL(/\/onboarding\?/);
-  await expect(page.getByRole("navigation", { name: "首次配置步骤", exact: true })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "使用引导步骤", exact: true })).toBeVisible();
 });

@@ -26,6 +26,8 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:8876",
     trace: "retain-on-failure",
+    // Offline fixture services are local; block accidental browser traffic to platforms.
+    proxy: { server: "http://127.0.0.1:9", bypass: "127.0.0.1,localhost,[::1]" },
   },
   webServer: {
     command: `"${python}" "${serverScript}" --port 8876`,
@@ -40,13 +42,6 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 900 },
-      },
-    },
-    {
-      name: "mobile-chromium",
-      use: {
-        ...devices["Pixel 5"],
-        viewport: { width: 390, height: 844 },
       },
     },
   ],

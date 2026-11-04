@@ -6,6 +6,7 @@ import json
 import os
 import tempfile
 import threading
+import sys
 from pathlib import Path
 
 import uvicorn
@@ -74,7 +75,10 @@ class DemoRuntime(CodexRuntime):
         self.stops[run_id] = stop
         try:
             stage_callback("analyzing_evidence")
-            message = request.messages[-1].content if request.messages else ""
+            # Review batches carry conversation history; inspect this operation's
+            # trigger, not a possibly later assistant/history message.
+            message = next((m.content for m in request.messages if m.id == request.trigger_message_id),
+                           request.messages[-1].content if request.messages else "")
             if request.phase == "chat" and "check-suggestion-fixture" in message:
                 return AnswerResult(type="answer", content="请在商品证据的待核实清单中核对并确认保存建议。", candidate_ids=[min(request.allowed_listing_ids)],
                     check_suggestions=[dict(listing_id=min(request.allowed_listing_ids), question="能否核对屏幕维修记录？", reason="保存的商品证据未提供维修记录。")])
@@ -275,6 +279,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=8876)
     args = parser.parse_args()
+
+    # Import asyncio above before the Windows subprocess boundary is wrapped.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from devtools.p4_offline_test_guard import pytest_configure
+    pytest_configure(None)
 
     with tempfile.TemporaryDirectory(prefix="shopping-agent-web-e2e-") as raw_dir:
         temp_dir = Path(raw_dir)

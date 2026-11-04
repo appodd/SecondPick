@@ -53,7 +53,7 @@ test("cross-project sidebar and workspace view distinguish enabled, waiting, col
   await expect(dialog).toBeVisible();
   await dialog.getByRole("link", { name: "AgentRun #22", exact: true }).click();
   await expect(page).toHaveURL(/projects\/2\?.*#research-run-22$/);
-  await expect(page.getByRole("heading", { name: "AgentRun #22 · 增量研究", exact: true })).toBeInViewport();
+  await expect(page.getByRole("heading", { name: "研究 #22 · 增量研究", exact: true })).toBeInViewport();
   await page.getByRole("link", { name: "返回运行中心", exact: true }).click();
   await expect(dialog).toBeVisible();
   expect(data.writes).toEqual([]);

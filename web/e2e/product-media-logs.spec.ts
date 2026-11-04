@@ -6,10 +6,11 @@ test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: "wait" })
 // Response and image fixtures are restricted to this isolated browser test.
 test("saved first images render in both views and preview without closing the evidence drawer", async ({ page }, info) => {
   await page.route("**/test-media/*.svg", route => route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="100"><rect width="160" height="100" fill="#dbe6fb"/><text x="15" y="55">Saved product</text></svg>' }));
+  await page.route("**/api/tasks/10/listings/*/images/*/content?*", route => route.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="160" height="100"><rect width="160" height="100" fill="blue"/></svg>'}));
   await page.route("**/api/tasks/10/listings/*/images", route => route.fulfill({ json: {
     listing_id: Number(route.request().url().split("/").at(-2)), images: [
-      { id: 1, url: "/test-media/first.svg", created_at: "2026-10-22" },
-      { id: 2, url: "/test-media/second.svg", created_at: "2026-10-22" },
+      { id: 1, url: "/test-media/first.svg", display_url:new URL(route.request().url()).pathname+'/1/content?sha256='+ 'a'.repeat(64),state:'local_available',created_at: "2026-10-22" },
+      { id: 2, url: "/test-media/second.svg", display_url:new URL(route.request().url()).pathname+'/2/content?sha256='+ 'b'.repeat(64),state:'local_available',created_at: "2026-10-22" },
     ] } }));
   await page.route("**/test-media/missing.jpg", route => route.fulfill({ status: 404, body: "missing" }));
   await page.route("**/api/projects/10/overview", async route => {
@@ -24,7 +25,7 @@ test("saved first images render in both views and preview without closing the ev
   await expect(rowImage).toBeVisible();
   await expect.poll(() => rowImage.evaluate((node: HTMLImageElement) => node.naturalWidth)).toBe(160);
   await expect(page.getByRole("img", { name: /图片加载失败/ }).first()).toBeVisible();
-  await expect(page.getByRole("img", { name: /暂无商品图片/ }).first()).toBeVisible();
+  await expect(page.getByRole("img", { name: /来源未提供图片/ }).first()).toBeVisible();
   await page.getByRole("button", { name: "卡片", exact: true }).click();
   await expect(page.locator(".sp-card-image img").first()).toHaveAttribute("src", /first.svg/);
   await page.locator(".sp-card-image").first().click();
@@ -35,7 +36,7 @@ test("saved first images render in both views and preview without closing the ev
   await viewer.getByRole("button", { name: "放大图片", exact: true }).click();
   await expect(viewer.getByText("150%", { exact: true })).toBeVisible();
   await viewer.getByRole("button", { name: "下一张图片" }).click();
-  await expect(viewer.getByRole("link", { name: "打开原图" })).toHaveAttribute("href", /second.svg/);
+  await expect(viewer.getByRole("link", { name: "打开原图" })).toHaveAttribute("href", /\/2\/content\?sha256=b{64}$/);
   await page.keyboard.press("Escape");
   await expect(viewer).toBeHidden();
   await expect(evidence).toBeVisible();

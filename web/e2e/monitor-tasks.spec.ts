@@ -40,6 +40,8 @@ async function scenario(page: Page, single = false) {
   await page.route("**/api/projects/10/monitors/*/runs", async route => {
     writes.push({ url: route.request().url(), body: route.request().postDataJSON() });
     native.find(item => item.id === 94)!.state = "waiting";
+    const window = items.find(item => item.monitor_id === 94)!;
+    window.runs.unshift({...window.runs[0], id:943, state:'running', finished_at:null});
     await route.fulfill({ json: {} });
   });
   const latest = "a".repeat(32), older = "b".repeat(32);
@@ -129,6 +131,7 @@ test("existing control endpoints preserve pause, resume, stop and explicit rerun
   await expect(detail.locator(".sp-execution .sp-status")).toHaveText("监控已停止");
   await page.goto("/projects/10?view=monitors&monitor=94");
   detail = page.getByRole("dialog", { name: "选购监控 94 · 监控详情" });
+  page.once('dialog', dialog => dialog.accept());
   await detail.getByRole("button", { name: "重新采集", exact: true }).click();
   await expect(detail.locator(".sp-execution .sp-status")).toHaveText("等待下一轮");
   expect(fixture.writes.map(item => new URL(item.url).pathname)).toEqual([

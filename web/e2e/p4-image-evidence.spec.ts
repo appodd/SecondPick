@@ -1,33 +1,30 @@
 import {expect,test} from '@playwright/test';
-import fs from 'node:fs';
-import path from 'node:path';
-const root=path.resolve(process.cwd(),process.cwd().endsWith('web')?'..':'.');
-const snapshots=JSON.parse(fs.readFileSync(path.join(root,'data/artifacts/p3-wording-formal-load-20261025/live-overviews.json'),'utf8'));
-const evidence=JSON.parse(fs.readFileSync(path.join(root,'data/artifacts/p3-generic-fix-20261024/evidence-1879.json'),'utf8'));
-test('P4 synthetic proof states in existing drawer never claim real vision',async({page},info)=>{
- let writes=0;
- await page.route('**/*',route=>{
-  const r=route.request(),u=new URL(r.url());
-  if(!['127.0.0.1','localhost'].includes(u.hostname))return route.abort();
-  if(r.method()!=='GET'){writes++;return route.abort();}
-  if(u.pathname==='/api/projects/3/overview')return route.fulfill({json:snapshots['3']});
-  if(u.pathname==='/api/listings/1879/evidence')return route.fulfill({json:evidence});
-  if(u.pathname==='/api/tasks/3/listings/1879/images')return route.fulfill({json:{listing_id:1879,images:[
-   {id:1,url:'https://img.alicdn.com/offline-fixture-1.png',created_at:'2026-10-25',evidence:{state:'url_only',observed:false}},
-   {id:2,url:'https://img.alicdn.com/offline-fixture-2.png',created_at:'2026-10-25',evidence:{state:'saved',observed:false}},
-   {id:3,url:'https://img.alicdn.com/offline-fixture-3.png',created_at:'2026-10-25',evidence:{state:'saved',observed:false,input_uses:[{study_id:987,goal_revision:1,input_constructed:true,remote_received:false,observed:false}]}}
-  ]}});
-  return route.continue();
- });
- await page.goto('/projects/3?view=products');await page.getByPlaceholder(/搜索/).first().fill('switch2 pro原装正品');
- await page.locator('button.sp-product-cell').first().click();
- const drawer=page.getByRole('dialog',{name:'商品与卖家证据'});
- const proof=drawer.getByLabel('图片证据状态');await proof.getByText('图片证据与模型使用',{exact:true}).click();
- await expect(proof.getByText(/图片 1：/)).toContainText('尚未保存文件');
- await expect(proof.getByText(/图片 2：/)).toContainText('图片文件已保存并校验');
- await expect(proof.getByText(/图片 3：/)).toContainText('附件已构造');
- await expect(proof.getByText(/图片 3：/)).toContainText('尚未确认送达模型');
- await expect(proof.getByText(/视觉观察：/)).toContainText('尚无已验证的真实记录');
- await proof.scrollIntoViewIfNeeded();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
- await page.screenshot({path:info.outputPath('p4-image-proof.png')});expect(writes).toBe(0);
+import {createHash} from 'node:crypto';
+import {syntheticMarket} from './synthetic-market';
+
+// The old attachment-proof panel was replaced by VisualEvidence. Test the
+// current binding checks with synthetic pixels and observations, never a model.
+for(const invalid of ['none','listing','hash','text-only','no-image-input','mock'])test(`visual provenance: ${invalid}`,async({page})=>{
+  await syntheticMarket(page);
+  const pixels='<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2"><rect width="2" height="2" fill="blue"/></svg>';
+  const hash=createHash('sha256').update(pixels).digest('hex'),writes:string[]=[];
+  const image={media_id:1,sha256:hash,width:2,height:2,source_url:'https://example.test/synthetic.png'};
+  const observation={id:'visual:101:987:synthetic',listing_id:invalid==='listing'?999:101,study_id:987,run_id:'123',media_id:1,
+    sha256:invalid==='hash'?'b'.repeat(64):hash,visible_content:'SYNTHETIC OBSERVATION',limited_inference:'',uncertainty:'Synthetic pixels cannot prove real condition',
+    status:'visible',origin:invalid==='text-only'?'text':'pixels',source_type:'image_observation',provider:'offline',model:'synthetic',review_state:'accepted',independently_verified:false,mode:'mock',references:[]};
+  await page.route('**/api/projects/10/listings/101/visual-evidence',route=>route.fulfill({json:{task_id:10,listing_id:101,goal_revision:1,state:'idle',approval_allowed:false,approval_blocked_reason:'Offline only',execution_enabled:false,
+    images:invalid==='no-image-input'?[]:[image],observations:invalid==='none'?[]:[observation],rejected_observations:0,unavailable_images:0,failures:[]}}));
+  await page.route('**/visual-images/1?*',route=>route.fulfill({contentType:'image/svg+xml',body:pixels}));
+  page.on('request',r=>{if(r.method()!=='GET')writes.push(r.url())});
+  await page.goto('/projects/10?view=products&q=sample%201');await page.locator('button.sp-product-cell').first().click();
+  const proof=page.getByRole('region',{name:'图片观察与审批'});
+  await expect(proof).toContainText('AI 看图不等于实物已核验');
+  if(invalid==='mock'){
+    await expect(proof).toContainText('离线 Mock');await expect(proof).toContainText('非独立核验');
+    await expect(proof.getByRole('img')).toHaveAttribute('src',new RegExp(`sha256=${hash}`));
+  }else{
+    await expect(proof).toContainText('暂无有效 AI 图片观察');
+    await expect(proof).not.toContainText('SYNTHETIC OBSERVATION');
+  }
+  expect(writes).toEqual([]);
 });

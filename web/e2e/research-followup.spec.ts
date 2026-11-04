@@ -22,6 +22,7 @@ test.afterEach(async ({ page }) => page.unrouteAll({ behavior: "wait" }));
 test("coverage distinguishes completed, unassessed, valuable followup and missing evidence", async ({ page }, info) => {
   await fixture(page);
   await page.goto("/projects/10?view=research");
+  await page.getByText("研究状态、覆盖与自动研究设置",{exact:true}).click();
   const stats = page.getByLabel("核心研究统计");
   await expect(stats).toContainText("12已逐项分析");
   await expect(stats).toContainText("87尚未逐项研究");
@@ -43,12 +44,15 @@ test("summary-only failure is visible, keeps saved output and offers original-sn
   let retries = 0;
   await page.route("**/api/projects/10/studies/50/retry", async route => { retries++; await route.fulfill({ json: { id: 50 } }); });
   await page.goto("/projects/10?view=research");
+  await page.getByText("研究状态、覆盖与自动研究设置",{exact:true}).click();
   await expect(page.getByText("有限补研需要处理", { exact: true })).toBeVisible();
+  await page.getByText("任务详情与证据",{exact:true}).click();
+  await page.getByText("失败原因",{exact:true}).click();
   await expect(page.getByText(/补研未返回完整、有效的逐项结构化判断/)).toBeVisible();
   const retry = page.getByRole("button", { name: "重试原快照", exact: true });
   await retry.click();
   await expect.poll(() => retries).toBe(1);
   await page.getByText("研究结论与依据", { exact: true }).click();
-  await expect(page.getByText("模拟纯摘要，不视为逐项研究", { exact: true })).toBeVisible();
+  await expect(page.locator('.sp-research-task-details').getByText("模拟纯摘要，不视为逐项研究", { exact: true })).toBeVisible();
   await expect(page.getByLabel("核心研究统计")).toContainText("12已逐项分析");
 });

@@ -2,7 +2,14 @@ import { expect, test, type Page } from "@playwright/test";
 
 async function send(page: Page, message: string) {
   await page.getByRole("textbox", { name: "对话输入" }).fill(message);
+  const submitted = page.waitForResponse(r => r.request().method() === 'POST' && /\/api\/tasks(?:\/\d+\/messages)?$/.test(new URL(r.url()).pathname));
   await page.getByRole("button", { name: "发送", exact: true }).click();
+  const response = await submitted;
+  if (/history-|legacy-goal|structured-fixture/.test(message)) {
+    const {operation} = await response.json();
+    await expect.poll(async()=> (await(await page.request.get(`/api/operations/${operation.id}`)).json()).operation.state,
+      {timeout:15000}).toMatch(/^(completed|failed)$/);
+  }
 }
 async function newTask(page: Page, message: string) {
   await page.goto("/new");
@@ -224,10 +231,17 @@ test("legacy goal sources and paged research load through the UI", async ({ page
   const messages = await (await page.request.get(`/api/tasks/${taskId}/messages`)).json();
   expect(messages.items).toHaveLength(2);
   for (let n = 0; n < 12; n++) {
-    await expect(page.getByRole("textbox", { name: "对话输入" })).toBeEnabled();
-    await send(page, `structured-fixture 按原有标准继续核对，第${n + 1}次`);
-    await expect(page.locator(".conversation-item--assistant")).toHaveCount(n + 2);
+    // This case tests paging/reference restoration, not thirteen separate UI
+    // send/poll cycles. Prepare durable history through the real offline API.
+    const response = await page.request.post(`/api/tasks/${taskId}/messages`,
+      {data:{message:`structured-fixture 按原有标准继续核对，第${n + 1}次`}});
+    expect(response.ok()).toBe(true);
+    const {operation} = await response.json();
+    await expect.poll(async()=> (await(await page.request.get(`/api/operations/${operation.id}`)).json()).operation.state,
+      {timeout:5000,intervals:[100,250,500]}).toBe('completed');
   }
+  await page.reload();
+  await expect(page.locator(".conversation-item--assistant")).toHaveCount(13);
   const progress = page.getByRole("region", { name: "研究记录加载进度" });
   await expect(progress).toContainText("已加载评估 10/15 批");
   const bound = await (await page.request.get(`/api/tasks/${taskId}`)).json();
@@ -404,9 +418,9 @@ test("shortlist comparison preserves reasons, checks and evidence after refresh"
   await expect(page.locator("#listing-evidence-title")).toHaveText("ThinkPad X1 Carbon #01");
 });
 
-test("conversation visual states at desktop, tablet and mobile sizes", async ({ page }, info) => {
+test("conversation visual states at desktop window sizes", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop-chromium", "sizes covered once");
-  for (const [width, height] of [[1440, 900], [1024, 768], [390, 844]]) {
+  for (const [width, height] of [[1440, 900], [1024, 768], [1280, 900]]) {
     await page.setViewportSize({ width, height });
     await page.goto("/new");
     await expect(page.getByRole("textbox", { name: "对话输入" })).toBeVisible();

@@ -31,9 +31,10 @@ test("overview monitor and research drill-downs share the contextual return with
   await overviewFixture(page);
   await page.goto("/projects/10?view=overview");
   for (const name of ["监控采集 ↗", "Agent 研究 ↗", "查看覆盖与研究状态 →"]) {
+    await page.locator("summary").filter({hasText:"运行详情"}).click();
     await page.getByRole("button", { name, exact: true }).click();
     await page.getByRole("link", { name: "返回研究概览", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "当前研究判断", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "目前，应该怎样选？", exact: true })).toBeVisible();
   }
 });
 
@@ -41,9 +42,10 @@ test("overview quotes real conclusions and per-item findings while the full repo
   const writes: string[] = []; page.on("request", request => { if (request.url().includes("/api/") && request.method() !== "GET") writes.push(request.url()); });
   await overviewFixture(page); await page.goto("/projects/10");
   const current = page.locator(".sp-current-report");
+  await page.locator("summary").filter({hasText:"运行详情"}).click();
   await expect(current.getByText("建议先核实机器状态，再确定交易对象。", { exact: true })).toBeVisible();
-  await expect(current.getByText("配置描述值得继续核对，尚不能直接下单。", { exact: true })).toBeVisible();
-  await expect(current.getByText("维修记录与实物情况仍待核实", { exact: true })).toBeVisible();
+  await expect(page.getByText("配置描述值得继续核对，尚不能直接下单。", { exact: true })).toBeVisible();
+  await expect(page.locator(".sp-overview-concerns").getByText("维修记录与实物情况仍待核实", { exact: true })).toBeVisible();
   await expect(current.getByText(/报告版本 1 的结尾/)).toHaveCount(0);
   const metrics = page.getByRole("region", { name: "项目运行概况" });
   await expect(metrics.getByText("等待下一轮", { exact: true })).toHaveAttribute("data-kind", "waiting");
@@ -51,7 +53,7 @@ test("overview quotes real conclusions and per-item findings while the full repo
   await expect(metrics.getByText("35", { exact: true })).toBeVisible(); await expect(metrics.getByText("7", { exact: true })).toBeVisible();
   await expect(metrics.getByText(/11 件仅批次概述/)).toBeVisible();
   expect(await current.evaluate(node => getComputedStyle(node).overflowY)).not.toMatch(/auto|scroll/);
-  await current.getByRole("button", { name: "查看完整报告 →" }).click();
+  await current.getByRole("button", { name: "阅读完整报告" }).click();
   const reader = page.getByRole("dialog", { name: "完整研究报告" });
   await expect(reader.getByText("报告版本 1 的结尾。", { exact: true })).toBeVisible();
   expect(await reader.locator(".sp-report-content").first().evaluate(node => getComputedStyle(node).overflowY)).toBe("visible");
@@ -65,11 +67,12 @@ test("overview quotes real conclusions and per-item findings while the full repo
 test("no-report, active research, waiting collection and paused collection remain distinct", async ({ page }) => {
   const scenario = await overviewFixture(page, { noReport: true, running: true, paused: true });
   await page.goto("/projects/10");
+  await page.locator("summary").filter({hasText:"运行详情"}).click();
   const metrics = page.getByRole("region", { name: "项目运行概况" });
   await expect(metrics.getByText("研究正在执行", { exact: true })).toHaveAttribute("data-kind", "running");
   await expect(metrics.getByText("采集已暂停", { exact: true })).toHaveAttribute("data-kind", "paused");
-  await expect(page.getByText(/尚未形成可信研究报告/)).toBeVisible();
-  await expect(page.getByRole("button", { name: "查看完整报告 →" })).toHaveCount(0);
+  await expect(page.getByRole("heading",{name:"正在进行首轮研究",exact:true})).toBeVisible();
+  await expect(page.getByRole("button", { name: "阅读完整报告" })).toHaveCount(0);
   await expect(page.locator(".sp-overview-product")).toHaveCount(0);
   scenario.monitor("running"); await expect(metrics.getByText("正在采集", { exact: true })).toHaveAttribute("data-kind", "running", { timeout: 8000 });
   scenario.monitor("waiting"); await expect(metrics.getByText("等待下一轮", { exact: true })).toHaveAttribute("data-kind", "waiting", { timeout: 8000 });
@@ -78,15 +81,16 @@ test("no-report, active research, waiting collection and paused collection remai
 
 test("missing narrative summary is explicit and unrelated short answers never become report conclusions", async ({ page }) => {
   await overviewFixture(page, { narrative: true }); await page.goto("/projects/10");
-  await expect(page.getByText(/接口未提供独立短结论/)).toBeVisible();
-  await expect(page.getByText("一段没有明确综合结论的长报告。", { exact: true })).toHaveCount(0);
-  await expect(page.getByText(/本报告没有提供该商品的逐项推荐理由/)).toBeVisible();
-  await expect(page.getByText(/不能将未列出理解为没有风险/)).toBeVisible();
+  await expect(page.getByText("报告开篇原文",{exact:true})).toBeVisible();
+  await expect(page.locator(".sp-overview-conclusion")).toHaveText("一段没有明确综合结论的长报告。");
+  await expect(page.getByText(/尚无可归属的逐项推荐理由/)).toBeVisible();
+  await page.locator(".sp-overview-candidate summary").first().click();
+  await expect(page.getByText("本批没有有效逐项判断。",{exact:true})).toBeVisible();
 });
 
 test("report polling keeps an open version and its scroll position stable", async ({ page }) => {
   const scenario = await overviewFixture(page); await page.goto("/projects/10");
-  await page.getByRole("button", { name: "查看完整报告 →" }).click();
+  await page.getByRole("button", { name: "阅读完整报告" }).click();
   const reader = page.getByRole("dialog", { name: "完整研究报告" });
   await reader.locator(".responsive-drawer__content").evaluate(node => { node.scrollTop = 180; });
   const top = await reader.locator(".responsive-drawer__content").evaluate(node => node.scrollTop);

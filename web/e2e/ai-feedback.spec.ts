@@ -38,7 +38,7 @@ test("long parsing is visible, duplicate-safe, editable, reduced-motion aware an
   await expect(dialog.getByLabel("项目名称", { exact: true })).toHaveValue("MacBook 选购");
   await expect(dialog.getByLabel("预算上限（元）", { exact: true })).toHaveValue("4200");
   await expect(dialog.getByRole("textbox", { name: "硬条件（每行一项）", exact: true })).toHaveValue("32GB 内存");
-  await expect(dialog.getByRole("checkbox")).not.toBeChecked();
+  await expect(dialog.getByRole("checkbox", { name: /自动批次研究/ })).not.toBeChecked();
   await expect(dialog.getByLabel("已整理的选购条件")).toContainText("32GB 内存");
   await expect(dialog.getByRole("progressbar")).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);

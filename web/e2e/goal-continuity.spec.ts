@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 // Explicit, isolated acceptance records; never written to the user's database.
-async function fixture(page: Page) {
+async function fixture(page: Page, versioned = false) {
   let legacy = false, unavailable = false;
   const original = "购买二手MacBook Pro，优先M系列，成色好，性价比高";
   const revised = "MacBook Pro，必须至少16GB内存，预算不超过5000元，仍优先M系列";
@@ -9,7 +9,7 @@ async function fixture(page: Page) {
   const ids = [143, 385, 378, 366, 1005, 1006], prices = [6000, 5666, 4090, 3400, 4000, 4500];
   await page.route("**/api/projects/10/overview", async route => {
     const response = await route.fetch(), data = await response.json();
-    delete data.goal_context; data.project.goal = original; data.policy = { ...data.policy, budget: null, hard: [], soft: ["优先M系列"], paused: 0, auto_research: 1 };
+    delete data.goal_context; if(versioned)data.goal_context={current_revision:1,report_current:true,calibration:"current",legacy_unmerged:false}; data.project.goal = original; data.policy = { ...data.policy, budget: null, hard: [], soft: ["优先M系列"], paused: 0, auto_research: 1 };
     data.cards = ids.map((listing_id, i) => ({ listing_id, title: titles[i], price_value: prices[i], price_text: String(prices[i]), url: "https://www.goofish.com/item", research_state: "evaluated", detail_status: "not_captured", source_run_ids: [], location: null, seller_name: null, search_condition: null }));
     data.total = 6; data.coverage = { evaluated: 6, waiting: 0, under_ai: 0, summarized: 0, needs_information: 0, rule_excluded: 0, blocked: 0 }; data.favorites = [143];
     data.report = { id: 70, study_id: 700, content: "原目标下的历史报告，所有价格均为保存记录。", candidate_ids_json: "[143,385,378,366]", snapshot_at: "2026-10-22T00:00:00Z", created_at: "2026-10-22T00:01:00Z", limited: 1 };
@@ -30,104 +30,60 @@ async function fixture(page: Page) {
 }
 test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: "wait" }); });
 
-test("calibration state follows backend waiting, queued, running, failure and current report", async ({ page }, info) => {
-  let state = "waiting";
-  await page.route("**/api/projects/10/overview", async route => {
-    const response = await route.fetch(), data = await response.json();
-    const current = state === "current";
-    data.goal_context = { current_revision: 2, original_goal: data.project.goal, report_current: current,
-      calibration: current ? "current" : state === "running" ? "running" : "pending", legacy_unmerged: false,
-      automatic_calibration_supported: true, updated_at: "2026-10-23T00:00:00Z",
-      calibration_work: { state, reason: state === "unavailable" ? "模拟额度不足，未自动重试，请检查原任务" : state === "waiting" ? "等待现有研究结束" : "只研究本次固定样本，不代表全库完成", listing_ids: [143], study_id: state === "waiting" ? null : 230 } };
-    data.studies = state === "waiting" ? [] : [{ id: 230, kind: "initial", origin: "automatic_calibration", state: current ? "completed" : state === "unavailable" ? "failed" : state === "scheduled" ? "queued" : "running",
-      goal_revision: 2, goal_text: "内存至少16GB，预算5000", listing_ids: [143], created_at: "2026-10-23T00:00:01Z", snapshot_at: "2026-10-23T00:00:01Z", error: state === "unavailable" ? "模拟额度不足" : null, result: null }];
-    if (data.report) data.report.goal_revision = current ? 2 : 1;
-    await route.fulfill({ json: data });
+test('current research state follows server queue, execution, failure and completed result',async({page})=>{
+  let state='queued';
+  await page.route('**/api/projects/10/overview',async r=>{
+    const d=await(await r.fetch()).json();d.goal_context={current_revision:2,original_goal:d.project.goal,report_current:state==='completed',calibration:state==='completed'?'current':'pending',legacy_unmerged:false};
+    d.studies=[{id:230,origin:'automatic_calibration',kind:'initial',state,goal_revision:2,listing_ids:[],created_at:'2026-11-03',snapshot_at:'2026-11-03',error:state==='failed'?'Synthetic quota error':null,result:state==='completed'?{content:'Synthetic completed calibration',candidate_ids:[]}:null}];
+    await r.fulfill({json:d});
   });
-  await page.goto("/projects/10?view=research");
-  await expect(page.getByText("新目标 v2 已生效，研究结论待校准", { exact: true })).toBeVisible();
-  state = "scheduled"; await page.reload();
-  await expect(page.getByText("目标 v2 校准研究已安排", { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "AgentRun #230 · 目标校准", exact: true })).toBeVisible();
-  await page.getByRole("link", { name: "查看校准研究 →", exact: true }).click();
-  await expect(page).toHaveURL(/#research-run-230$/);
-  state = "running"; await page.reload();
-  await expect(page.getByText("正在按目标 v2 研究", { exact: true })).toBeVisible();
-  state = "unavailable"; await page.reload();
-  await expect(page.getByText("目标 v2 校准研究失败 · 结论待更新", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "重试原快照", exact: true })).toBeVisible();
-  state = "current"; await page.reload();
-  await expect(page.getByText("目标 v2 的研究结论已就绪", { exact: true })).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)).toBe(false);
-  await page.screenshot({ path: info.outputPath("calibration-current.png"), fullPage: true });
+  for(const [value,kind]of[['queued','waiting'],['running','running'],['failed','attention'],['completed','success']]){
+    state=value;await page.goto('/projects/10?view=research');
+    await expect(page.locator('.sp-research-featured .sp-status')).toHaveAttribute('data-kind',kind);
+    await expect(page.getByRole('heading',{name:'研究 #230 · 目标校准',exact:true})).toBeVisible();
+  }
+  await expect(page.locator('.sp-research-featured')).toContainText('Synthetic completed calibration');
 });
 
-test("MacBook goal change preview finds two budget and two memory shortfalls without saving or calling AI", async ({ page }, info) => {
-  const data = await fixture(page);
-  await page.goto("/projects/10?view=overview");
-  await page.getByRole("button", { name: "调整选购条件", exact: true }).click();
-  const dialog = page.getByRole("dialog", { name: "调整选购条件", exact: true });
-  await dialog.getByLabel("拟调整的选购目标", { exact: true }).fill(data.revised);
-  await dialog.getByLabel("拟定预算上限（元）", { exact: true }).fill("5000");
-  await dialog.getByLabel("拟定最低内存（GB）", { exact: true }).fill("16");
-  await dialog.getByRole("button", { name: "预览调整影响", exact: true }).click();
-  const impact = dialog.getByRole("region", { name: "目标调整影响预览", exact: true });
-  await expect(impact).toContainText("原报告可读取候选 4 件，其中 4 件按保存记录不满足拟定条件");
-  await expect(impact.locator(":scope > .sp-goal-impact-list").getByText("按已保存挂牌价超出拟定预算", { exact: true })).toHaveCount(2);
-  await expect(impact.locator(":scope > .sp-goal-impact-list").getByText(/按标题自述 8GB，低于拟定的 16GB/)).toHaveCount(2);
-  await expect(dialog.locator(".sp-goal-counts")).toHaveText("4按记录不满足1信息待核实1已知条件暂符合");
-  await expect(dialog.getByRole("button", { name: "确认并保存新目标", exact: true })).toBeDisabled();
-  await expect(dialog).toContainText("尚未保存"); expect(data.writes).toEqual([]);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)).toBe(false);
-  await page.screenshot({ path: info.outputPath("goal-impact-preview.png"), fullPage: true });
-  await dialog.getByLabel("拟定预算上限（元）", { exact: true }).fill("7000");
-  await expect(impact).toHaveCount(0); // Old preview cannot remain after editing.
-  await page.keyboard.press("Escape"); await page.reload();
-  await expect(page.getByRole("heading", { name: "当前研究判断", exact: true })).toBeVisible();
-  await expect(page.getByText("购买二手MacBook Pro，优先M系列，成色好，性价比高", { exact: true })).toBeVisible();
-  expect(data.writes).toEqual([]);
+test('goal preview checks budget and memory without saving, collecting or invoking AI',async({page})=>{
+  const data=await fixture(page,true);await page.goto('/projects/10?view=overview');
+  await page.getByRole('link',{name:'调整目标 →'}).click();
+  const dialog=page.getByRole('dialog',{name:'调整选购条件',exact:true});await dialog.getByRole('button',{name:'直接手动修改'}).click();
+  await dialog.getByLabel('调整后的选购目标',{exact:true}).fill(data.revised);
+  await dialog.getByLabel('拟定预算上限（元）',{exact:true}).fill('5000');await dialog.getByLabel('拟定最低内存（GB）',{exact:true}).fill('16');
+  await dialog.getByRole('button',{name:'预览调整影响',exact:true}).click();const impact=dialog.getByRole('region',{name:'目标调整影响预览'});
+  await impact.getByText('展开商品核对详情',{exact:true}).click();
+  await expect(impact).toContainText('原报告可读取候选 4 件，其中 4 件按保存记录不满足拟定条件');
+  await expect(impact.locator('.sp-goal-impact-list').first().getByText('按已保存挂牌价超出拟定预算',{exact:true})).toHaveCount(2);
+  await expect(impact.locator('.sp-goal-impact-list').first().getByText(/按标题自述 8GB，低于拟定的 16GB/)).toHaveCount(2);
+  await expect(dialog.locator('.sp-goal-counts')).toHaveText('4按记录不满足1信息待核实1已知条件暂符合');
+  await expect(dialog.getByRole('button',{name:'确认并保存修改',exact:true})).toBeEnabled();expect(data.writes).toEqual([]);
+  await dialog.getByLabel('拟定预算上限（元）',{exact:true}).fill('7000');await expect(impact).toHaveCount(0);
+  page.once('dialog',d=>d.accept());await page.keyboard.press('Escape');await page.reload();await expect(page.locator('.sp-project-goal-text')).toHaveText('购买二手MacBook Pro，优先M系列，成色好，性价比高');expect(data.writes).toEqual([]);
 });
 
-test("real legacy goal revision marks recommendations as uncalibrated without relabelling an old active run", async ({ page }) => {
-  const data = await fixture(page); data.change();
-  await page.goto("/projects/10?view=overview");
-  await expect(page.getByText("选购条件记录未衔接 · 结论待校准", { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "已保存研究判断（待校准）", exact: true })).toBeVisible();
-  await expect(page.getByText("当前目标下已评估数量暂不可确认。", { exact: false })).toBeVisible();
-  await expect(page.getByText("研究正在执行", { exact: true })).toBeVisible();
-  await expect(page.getByText("Agent 正在根据新目标重新评估", { exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: "查看研究历史 →", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "AgentRun #701 · 增量研究", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "研究下一个有限批次", exact: true })).toBeDisabled();
-  await page.getByRole("button", { name: "SecondPick Agent", exact: true }).click();
-  await expect(page.getByRole("button", { name: "提交本次研究", exact: true })).toBeDisabled();
-  await page.keyboard.press("Escape");
-  await page.getByRole("navigation", { name: "当前项目", exact: true }).getByRole("button", { name: "候选清单", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "原报告候选（待校准）", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "取消收藏", exact: true }).first()).toBeVisible();
-  expect(data.writes).toEqual([]);
+test('legacy goal revision preserves report as history and does not relabel active study',async({page})=>{
+  const data=await fixture(page);data.change();await page.goto('/projects/10?view=overview');
+  await expect(page.locator('.sp-current-report')).toHaveClass(/sp-report-historical/);await expect(page.locator('.sp-overview-caution')).toContainText('历史参考');
+  await page.locator('summary').filter({hasText:'运行详情'}).click();await expect(page.getByText('当前目标下已评估数量暂不可确认。',{exact:false})).toBeVisible();
+  await page.getByRole('navigation',{name:'当前项目',exact:true}).getByRole('button',{name:'Agent 研究',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'研究 #701 · 增量研究',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'研究下一个有限批次',exact:true})).toBeDisabled();
+  await page.getByRole('navigation',{name:'当前项目',exact:true}).getByRole('button',{name:'候选清单',exact:true}).click();
+  await expect(page.getByRole('region',{name:'候选来源与新鲜度'})).toContainText('适用性待确认');
+  await expect(page.getByRole('button',{name:'取消收藏商品 #143',exact:true})).toBeVisible();expect(data.writes).toEqual([]);
 });
 
-test("goal record refresh failure does not preserve a false ready state or infer calibration from timestamps", async ({ page }) => {
-  const data = await fixture(page); data.fail();
-  await page.goto("/projects/10?view=research");
-  await expect(page.getByText("目标版本暂不可确认", { exact: true })).toBeVisible({ timeout: 10000 });
-  await expect(page.getByRole("button", { name: "研究下一个有限批次", exact: true })).toBeDisabled();
-  await page.getByRole("button", { name: "SecondPick Agent", exact: true }).click();
-  await expect(page.getByRole("button", { name: "提交本次研究", exact: true })).toBeDisabled();
-  expect(data.writes).toEqual([]);
+test('unavailable goal record prevents research and keeps saved report unconfirmed',async({page})=>{
+  const data=await fixture(page);data.fail();await page.goto('/projects/10?view=research');
+  await expect(page.getByRole('button',{name:'研究下一个有限批次',exact:true})).toBeDisabled();
+  await page.goto('/projects/10?view=overview');await expect(page.locator('.sp-current-report')).toHaveClass(/sp-report-historical/);
+  await expect(page.locator('.sp-overview-caution')).toContainText('暂不可确认');expect(data.writes).toEqual([]);
 });
 
-
-test("losing goal confirmation never promotes an uncalibrated report back to a current recommendation", async ({ page }) => {
-  const data = await fixture(page); data.change();
-  await page.goto("/projects/10?view=overview");
-  await expect(page.getByRole("heading", { name: "已保存研究判断（待校准）", exact: true })).toBeVisible();
-  data.fail();
-  await expect(page.getByText("目标版本暂不可确认", { exact: true })).toBeVisible({ timeout: 10000 });
-  await expect(page.getByRole("heading", { name: "已保存研究判断（适用性待确认）", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "当前研究判断", exact: true })).toHaveCount(0);
-  expect(data.writes).toEqual([]);
+test('losing goal confirmation never promotes a historical report to current recommendation',async({page})=>{
+  const data=await fixture(page);data.change();await page.goto('/projects/10?view=overview');await expect(page.locator('.sp-overview-caution')).toContainText('历史参考');
+  data.fail();await expect(page.locator('.sp-overview-caution')).toContainText('暂不可确认',{timeout:10000});await expect(page.locator('.sp-current-report')).toHaveClass(/sp-report-historical/);expect(data.writes).toEqual([]);
 });
 
 test("NS2 controller confirms a real goal version without computer fields, duplicate versions, research or monitor changes", async ({ page }) => {
@@ -144,22 +100,23 @@ test("NS2 controller confirms a real goal version without computer fields, dupli
   const aiWrites:string[]=[];
   page.on("request",request=>{if(request.method()!=="GET" && /studies|monitor-drafts|project-goal-drafts|\/monitors/.test(request.url())) aiWrites.push(request.url());});
   await page.goto(`/projects/${id}?view=overview`);
-  await page.getByRole("button",{name:"调整选购条件",exact:true}).click();
+  await page.getByRole("link",{name:"调整目标 →",exact:true}).click();
   const dialog=page.getByRole("dialog",{name:"调整选购条件",exact:true});
+  await dialog.getByRole("button",{name:"直接手动修改",exact:true}).click();
   await expect(dialog.getByLabel("拟定最低内存（GB）",{exact:true})).toHaveCount(0);
-  await dialog.getByLabel("拟调整的选购目标",{exact:true}).fill("原装二手NS2 Pro手柄，预算350元");
+  await dialog.getByLabel("调整后的选购目标",{exact:true}).fill("原装二手NS2 Pro手柄，预算350元");
   await dialog.getByLabel("拟定预算上限（元）",{exact:true}).fill("350");
   await dialog.getByLabel("保留的硬条件（每行一项）",{exact:true}).fill("必须兼容Switch 2");
   await dialog.getByRole("button",{name:"预览调整影响",exact:true}).click();
-  await dialog.getByRole("button",{name:"确认并保存新目标",exact:true}).click();
+  await dialog.getByRole("button",{name:"确认并保存修改",exact:true}).click();
   await expect(dialog.getByRole("alert")).toContainText("响应丢失", { timeout: 15000 });
-  await dialog.getByRole("button",{name:"确认并保存新目标",exact:true}).click();
-  await expect(dialog).toContainText("目标 v2 已确认保存");
+  await dialog.getByRole("button",{name:"确认并保存修改",exact:true}).click();
+  await expect(dialog).toContainText("已从 v1 更新为 v2");
   expect(requests).toHaveLength(2); expect(requests[0].request_key).toBe(requests[1].request_key);
   await page.keyboard.press("Escape");
-  await expect(page.getByText("目标 v2 结论待校准 · 无法自动研究",{exact:true})).toBeVisible();
+  await expect(page.getByRole("heading",{name:"当前选购目标 v2",exact:true})).toBeVisible();
   await page.reload();
-  await expect(page.getByText("目标 v2 结论待校准 · 无法自动研究",{exact:true})).toBeVisible();
+  await expect(page.getByRole("heading",{name:"当前选购目标 v2",exact:true})).toBeVisible();
   const data=await(await page.request.get(`/api/projects/${id}/overview`)).json();
   expect(data.goal_context.original_goal).toBe(original); expect(data.policy.auto_research).toBe(0);
   expect(data.policy.hard).toEqual(["必须兼容Switch 2"]); expect(data.studies).toEqual([]);
@@ -173,16 +130,17 @@ test("an outdated confirmation returns a conflict and preserves the user's unsav
   const baseline=await(await page.request.get(`/api/projects/${id}/overview`)).json();
   await page.route(`**/api/projects/${id}/overview`,route=>route.fulfill({json:baseline}));
   await page.goto(`/projects/${id}`);
-  await page.getByRole("button",{name:"调整选购条件",exact:true}).click();
+  await page.getByRole("link",{name:"调整目标 →",exact:true}).click();
   const dialog=page.getByRole("dialog",{name:"调整选购条件",exact:true});
+  await dialog.getByRole("button",{name:"直接手动修改",exact:true}).click();
   await expect(dialog.getByLabel("拟定最低内存（GB）",{exact:true})).toHaveCount(0);
   await expect(dialog.getByLabel("保留的硬条件（每行一项）",{exact:true})).toHaveValue("");
-  await dialog.getByLabel("拟调整的选购目标",{exact:true}).fill("此窗口的未保存草案");
+  await dialog.getByLabel("调整后的选购目标",{exact:true}).fill("此窗口的未保存草案");
   await dialog.getByRole("button",{name:"预览调整影响",exact:true}).click();
   await page.request.patch(`/api/projects/${id}/goal`,{data:{goal:"另一窗口已确认目标",budget:null,hard:[],soft:[],expected_revision:1,request_key:"another-browser-confirm",confirmed:true}});
-  await dialog.getByRole("button",{name:"确认并保存新目标",exact:true}).click();
+  await dialog.getByRole("button",{name:"确认并保存修改",exact:true}).click();
   await expect(dialog.getByRole("alert")).toContainText("已变化");
-  await expect(dialog.getByLabel("拟调整的选购目标",{exact:true})).toHaveValue("此窗口的未保存草案");
+  await expect(dialog.getByLabel("调整后的选购目标",{exact:true})).toHaveValue("此窗口的未保存草案");
   expect((await(await page.request.get(`/api/projects/${id}/overview`)).json()).project.goal).toBe("另一窗口已确认目标");
 });
 
@@ -196,8 +154,9 @@ test("a versioned old running study stays historical and report history retains 
   });
   await page.route("**/api/projects/10/reports",route=>route.fulfill({json:{items:[{id:42,goal_revision:1,content:"目标v1的真实历史字段测试文本",candidate_ids_json:"[]",snapshot_at:"2026-10-22T00:00:00Z",created_at:"2026-10-22T00:01:00Z",limited:1}],has_more:false,next_before_id:null}}));
   await page.goto("/projects/10?view=research");
-  await expect(page.getByText("新目标 v2 已生效，研究结论待校准",{exact:true})).toBeVisible();
+  await expect(page.locator(".sp-research-featured")).toContainText("历史目标结果");
   await expect(page.getByText("正在按目标 v2 研究",{exact:true})).toHaveCount(0);
+  await page.getByText("任务详情与证据",{exact:true}).click();
   await expect(page.getByText(/目标 v1（历史目标，不覆盖当前结论）/)).toBeVisible();
   await page.getByText("历史研究报告",{exact:true}).click();
   await page.getByRole("button",{name:/报告 #42 · 目标 v1/}).click();

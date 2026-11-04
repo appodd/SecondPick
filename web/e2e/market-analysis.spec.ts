@@ -15,8 +15,8 @@ async function fixture(page: Page, mode: "normal" | "unknown" | "empty" | "camer
     : mode === "unknown" ? [make(101, "MacBook Pro 16GB 512GB", 3000), make(102, "MacBook Pro 16GB 512GB", 3500), make(103, "MacBook Pro Intel i7 16GB 512GB", 2500), make(104, title, 5500)] : mode === "camera" ? [make(101, "索尼 A7III 单机 2020", 3000), make(102, "索尼 A7III 单机 2020", 3500)] : [make(101, title, null)];
   await page.route("**/api/projects/10/overview", async route => {
     const data = structuredClone(overviewTemplate);
-    delete data.goal_context; delete data.market; data.cards = cards; data.total = cards.length; data.project.goal = "选购 MacBook Pro M2，16GB 内存、512GB 存储";
-    data.report = { id: 1, study_id: 1, candidate_ids_json: "[101]", content: "有限样本研究", snapshot_at: "2026-10-21T02:00:00Z", created_at: "2026-10-21T03:00:00Z", limited: 1 };
+    data.goal_context={current_revision:1,report_current:true,calibration:'current',legacy_unmerged:false}; delete data.market; data.cards = cards; data.total = cards.length; data.project.goal = "选购 MacBook Pro M2，16GB 内存、512GB 存储";
+    data.report = { goal_revision:1, id: 1, study_id: 1, candidate_ids_json: "[101]", content: "有限样本研究", snapshot_at: "2026-10-21T02:00:00Z", created_at: "2026-10-21T03:00:00Z", limited: 1 };
     data.favorites = [101]; data.studies = []; data.policy.auto_research = 0; data.coverage.under_ai = 0;
     await route.fulfill({ json: data });
   });
@@ -37,7 +37,8 @@ test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: "wait" })
 test("candidate analysis uses comparable peers, grouped prices, real quartiles and a marker", async ({ page }, info) => {
   const data = await fixture(page);
   await page.goto("/projects/10?view=shortlist");
-  await page.getByRole("link", { name: "查看行情参考", exact: true }).first().click();
+  await page.locator(".ux2-decision-card details").first().locator("summary").click();
+  await page.getByRole("link", { name: /查看行情参考/ }).first().click();
   await expect(page).toHaveURL(/display=market&marketFor=101/);
   await expect(page.getByLabel("行情处理器 / 芯片", { exact: true })).toHaveValue("M2");
   await expect(page.getByLabel("行情运行内存", { exact: true })).toHaveValue("16GB");
@@ -77,7 +78,7 @@ test("bin selection exposes actual samples and search/chart/table share filters"
   await expect(page.getByLabel("挂牌价核心统计")).toContainText("0可用挂牌样本");
   await expect(page.getByText(/当前范围没有可用于统计的挂牌样本/)).toBeVisible();
   await page.getByRole("button", { name: "表格", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "还没有匹配的商品" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "没有匹配的商品" })).toBeVisible();
 });
 
 test("unknown chip and limited samples are not silently mixed or classified as cheap", async ({ page }) => {
@@ -103,9 +104,9 @@ test("invalid prices and empty peer pools have no fabricated histogram or candid
 test("product evidence has a market entry and navigation gains no new primary market page", async ({ page }) => {
   await fixture(page);
   await page.goto("/projects/10?view=shortlist");
-  await page.getByRole("button", { name: "MacBook Pro M2 16GB 512GB 14寸 2023", exact: true }).first().click();
+  await page.getByRole("button", { name: /查看商品与证据/ }).first().click();
   const detail = page.getByRole("dialog", { name: "商品与卖家证据", exact: true });
-  await detail.getByRole("button", { name: "查看行情参考", exact: true }).click();
+  await detail.getByRole("button", { name: /查看行情参考/ }).click();
   await expect(detail).toBeHidden();
   await expect(page.getByLabel("挂牌价核心统计")).toContainText("9可用挂牌样本");
   await expect(page.getByRole("navigation", { name: "当前项目" }).getByRole("button", { name: "市场", exact: true })).toHaveCount(0);
@@ -129,8 +130,8 @@ for (const display of ["table", "cards"]) test(`${display} product context resto
   expect(before).toBeGreaterThan(100);
   await product.click();
   const detail = page.getByRole("dialog", { name: "商品与卖家证据", exact: true });
-  await detail.getByRole("button", { name: "查看行情参考", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "市场行情参考", exact: true })).toBeVisible();
+  await detail.getByRole("button", { name: /查看行情参考/ }).click();
+  await expect(page.getByRole("heading", { name: /市场行情参考/ })).toBeVisible();
   await page.reload();
   await page.getByRole("link", { name: "返回商品列表", exact: true }).click();
   const search = new URL(page.url()).searchParams;
@@ -149,14 +150,15 @@ for (const display of ["table", "cards"]) test(`${display} product context resto
 test("shortlist and overview return to their origin while a direct or unsafe URL falls back to the product list", async ({ page }) => {
   const data = await fixture(page);
   await page.goto("/projects/10?view=shortlist");
-  await page.getByRole("link", { name: "查看行情参考", exact: true }).first().click();
+  await page.locator(".ux2-decision-card details").first().locator("summary").click();
+  await page.getByRole("link", { name: /查看行情参考/ }).first().click();
   await page.reload();
   await page.getByRole("link", { name: "返回候选清单", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Agent 推荐候选", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "候选来源", exact: true })).toBeVisible();
   await page.goto("/projects/10?view=overview");
-  await page.getByRole("link", { name: "查看本项目采集样本的挂牌行情 →", exact: true }).click();
+  await page.getByRole("link", { name: "查看挂牌行情", exact: true }).click();
   await page.getByRole("link", { name: "返回研究概览", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "当前研究判断", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "目前，应该怎样选？", exact: true })).toBeVisible();
   for (const extra of ["", "&returnTo=https%3A%2F%2Fexample.com", "&returnTo=%2Fprojects%2F999%3Fview%3Dshortlist"]) {
     await page.goto(`/projects/10?view=products&display=market&marketFor=101${extra}`);
     const back = page.getByRole("link", { name: "返回商品列表", exact: true });
@@ -169,26 +171,27 @@ test("shortlist and overview return to their origin while a direct or unsafe URL
 test("overview all-candidates entry returns to overview, including a nested market visit and refresh", async ({ page }) => {
   const data = await fixture(page);
   await page.goto("/projects/10?view=overview");
-  const all = page.getByRole("button", { name: "查看全部候选 →", exact: true });
+  const all = page.getByRole("main").getByRole("button", { name: "候选清单", exact: true });
   await all.scrollIntoViewIfNeeded();
   const before = await page.evaluate(() => window.scrollY);
   await all.click();
-  await expect(page.getByRole("heading", { name: "Agent 推荐候选", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "候选来源", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "返回研究概览", exact: true })).toBeVisible();
   await page.reload();
   await page.getByRole("checkbox", { name: /^对比 / }).first().click();
   await expect(page.getByRole("checkbox", { name: /^对比 / }).first()).toBeChecked();
-  await page.getByRole("link", { name: "查看行情参考", exact: true }).first().click();
+  await page.locator(".ux2-decision-card details").first().locator("summary").click();
+  await page.getByRole("link", { name: /查看行情参考/ }).first().click();
   await page.reload();
   await page.getByRole("link", { name: "返回候选清单", exact: true }).click();
   await expect(page.getByRole("checkbox", { name: /^对比 / }).first()).toBeChecked();
   await page.getByRole("link", { name: "返回研究概览", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "当前研究判断", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "目前，应该怎样选？", exact: true })).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(before, 0);
   await page.goBack();
   await expect(page.getByRole("link", { name: "返回研究概览", exact: true })).toBeVisible();
   await page.goForward();
-  await expect(page.getByRole("heading", { name: "当前研究判断", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "目前，应该怎样选？", exact: true })).toBeVisible();
   await page.getByRole("navigation", { name: "当前项目" }).getByRole("button", { name: "候选清单", exact: true }).click();
   await expect(page.getByRole("link", { name: "返回研究概览", exact: true })).toHaveCount(0);
   expect(data.writes).toEqual([]);
@@ -213,125 +216,82 @@ test("settings and legacy detours keep the source including market conditions an
   expect(data.writes).toEqual([]);
 });
 
-test("cancel new monitor preserves source and temporary Agent navigation offers an explicit return", async ({ page }) => {
-  const data = await fixture(page);
-  await page.goto("/projects/10?view=products&display=cards&q=M2&sort=price");
-  await page.getByRole("button", { name: "新建监控", exact: true }).click();
-  const draft = page.getByRole("dialog", { name: "监控计划草案", exact: true });
-  await draft.getByRole("button", { name: "关闭监控计划草案", exact: true }).click();
-  await expect(page.getByRole("textbox", { name: "搜索商品", exact: true })).toHaveValue("M2");
-  await expect(page.getByRole("button", { name: "卡片", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("button", { name: "SecondPick Agent", exact: true }).click();
-  await page.getByRole("textbox", { name: "给 Agent 的指令", exact: true }).fill("只看 512GB");
-  await page.getByRole("button", { name: "提交本次研究", exact: true }).click();
-  await expect(page.getByRole("textbox", { name: "搜索商品", exact: true })).toHaveValue("512GB");
-  await page.getByRole("link", { name: "返回商品列表", exact: true }).click();
-  await expect(page.getByRole("textbox", { name: "搜索商品", exact: true })).toHaveValue("M2");
-  await page.getByRole("button", { name: "SecondPick Agent", exact: true }).click();
-  await page.getByRole("textbox", { name: "给 Agent 的指令", exact: true }).fill("以后只抓 16GB");
-  await page.getByRole("button", { name: "提交本次研究", exact: true }).click();
-  await expect(draft).toBeVisible();
-  await expect(draft.getByLabel("自然语言监控要求")).toHaveValue("以后只抓 16GB");
-  await draft.getByRole("button", { name: "关闭监控计划草案", exact: true }).click();
-  await page.getByRole("link", { name: "返回商品列表", exact: true }).click();
-  await expect(page.getByRole("button", { name: "卡片", exact: true })).toHaveAttribute("aria-pressed", "true");
-  expect(data.writes).toEqual([]);
-});
-
-
-test("shared Agent submits exact selected scope with idempotent retry, not a completed research claim", async ({ page }) => {
-  await fixture(page);
-  const bodies: { ids: number[]; question: string; request_key: string }[] = [];
-  await page.route("**/api/projects/10/studies", async route => {
-    bodies.push(route.request().postDataJSON());
-    await route.fulfill(bodies.length === 1 ? { status: 503, json: { error: { code: "offline", message: "测试暂时不可用" } } } : { json: { id: 901 } });
-  });
-  await page.goto("/projects/10?view=products&q=Intel&sort=price");
-  await expect(page.getByRole("textbox", { name: "给 Agent 的指令", exact: true })).toHaveCount(0);
-  const boxes = page.getByRole("checkbox", { name: /^选择 / });
-  await boxes.nth(0).check(); await boxes.nth(1).check();
-  await page.getByRole("button", { name: "AI 分析选中商品", exact: true }).click();
-  const dialog = page.getByRole("dialog", { name: "SecondPick Agent", exact: true });
-  await expect(dialog).toContainText("#111、#112"); expect(bodies).toHaveLength(0);
-  await dialog.getByRole("button", { name: "提交本次研究", exact: true }).click();
-  await expect(dialog.getByRole("alert")).toContainText("测试暂时不可用");
-  await dialog.getByRole("button", { name: "提交本次研究", exact: true }).click();
-  await expect(dialog).toContainText("AgentRun #901 已受理");
-  expect(bodies).toHaveLength(2); expect(bodies[0].ids).toEqual([111, 112]);
-  expect(bodies[0].request_key).toBe(bodies[1].request_key);
-  expect(bodies[1].question).toContain("商品调查"); expect(bodies[1].question).toContain("不得更改持久研究策略");
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("textbox", { name: "搜索商品", exact: true })).toHaveValue("Intel");
-  await expect(boxes.nth(0)).toBeChecked();
-});
-
-test("candidate decisions and report follow-up use the same panel with different evidence context", async ({ page }, info) => {
-  await fixture(page);
-  const bodies: { ids: number[]; question: string }[] = [];
-  await page.route("**/api/projects/10/studies", async route => { bodies.push(route.request().postDataJSON()); await route.fulfill({ json: { id: 902 } }); });
-  await page.goto("/projects/10?view=shortlist&compare=101,102");
-  await page.getByRole("button", { name: "AI 对比候选", exact: true }).click();
-  let dialog = page.getByRole("dialog", { name: "SecondPick Agent", exact: true });
-  await expect(dialog).toContainText("#101、#102");
-  await dialog.getByRole("button", { name: "提交本次研究", exact: true }).click();
-  await expect(dialog).toContainText("已受理"); expect(bodies[0].ids).toEqual([101, 102]);
-  expect(bodies[0].question).toContain("选购决策"); expect(bodies[0].question).toContain("关键取舍");
-  await page.screenshot({ path: info.outputPath("shared-agent-decision.png"), fullPage: true });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)).toBe(false);
-  await page.goto("/projects/10?view=overview");
-  await page.getByRole("button", { name: "追问研究结论", exact: true }).click();
-  dialog = page.getByRole("dialog", { name: "SecondPick Agent", exact: true });
-  await dialog.getByRole("button", { name: "提交本次研究", exact: true }).click();
-  await expect(dialog).toContainText("已受理");
-  expect(bodies[1].question).toContain("该版本完整报告：\n有限样本研究"); expect(bodies[1].ids).toEqual([101]);
-});
-
-test("research direction rejects persistent strategy writes and monitor planning remains an unexecuted draft", async ({ page }) => {
-  const { writes } = await fixture(page);
-  await page.goto("/projects/10?view=research");
-  await page.getByRole("button", { name: "本次研究重点", exact: true }).click();
-  const dialog = page.getByRole("dialog", { name: "SecondPick Agent", exact: true });
-  await dialog.getByRole("textbox", { name: "给 Agent 的指令", exact: true }).fill("以后优先研究 Intel");
-  await dialog.getByRole("button", { name: "提交本次研究", exact: true }).click();
-  await expect(dialog.getByRole("alert")).toContainText("不能保存长期研究策略");
-  await page.keyboard.press("Escape");
-  await page.goto("/projects/10?view=monitors");
-  await page.getByRole("button", { name: "AI 规划监控", exact: true }).click();
-  await dialog.getByRole("textbox", { name: "给 Agent 的指令", exact: true }).fill("增加 Intel iMac 长期监控");
-  await dialog.getByRole("button", { name: "准备可编辑监控草案", exact: true }).click();
-  const draft = page.getByRole("dialog", { name: "监控计划草案", exact: true });
-  await expect(draft.getByLabel("自然语言监控要求")).toHaveValue("增加 Intel iMac 长期监控");
-  await expect(draft.getByRole("button", { name: "AI 生成可编辑草案", exact: true })).toBeVisible();
-  await expect.poll(() => draft.evaluate(node => node.contains(document.activeElement))).toBe(true);
+test("cancel monitor plan preserves source and Agent configuration requests remain drafts", async ({ page }) => {
+  const {writes}=await fixture(page);
+  await page.goto('/projects/10?view=monitors');
+  await page.getByRole('button',{name:'新建监控',exact:true}).click();
+  const plan=page.getByRole('dialog',{name:'监控计划草案',exact:true});
+  await plan.getByRole('button',{name:'关闭监控计划草案',exact:true}).click();
+  await page.goto('/projects/10?view=products&display=cards&q=M2&sort=price');
+  await page.getByRole('button',{name:'打开项目 Agent'}).click();
+  const agent=page.getByRole('complementary',{name:'SecondPick Agent 对话栏'});
+  await agent.getByRole('textbox',{name:'给 Agent 的指令'}).fill('新建 Intel iMac 长期监控');
+  await agent.getByRole('button',{name:'发送',exact:true}).click();
+  await expect(page.getByLabel('调整哪项监控')).toBeVisible();
+  await expect(page.getByRole('textbox',{name:'搜索商品',exact:true})).toHaveValue('M2');
   expect(writes).toEqual([]);
 });
 
-
-test("oversized selections are not silently reduced and closing the shared panel restores keyboard focus", async ({ page }) => {
-  const { writes } = await fixture(page, "many");
-  await page.goto("/projects/10?view=products");
-  await page.getByRole("checkbox", { name: "全选当前页", exact: true }).check();
-  await expect(page.getByRole("button", { name: "AI 分析选中商品", exact: true })).toBeDisabled();
-  const launcher = page.getByRole("button", { name: "SecondPick Agent", exact: true });
-  await launcher.click();
-  const dialog = page.getByRole("dialog", { name: "SecondPick Agent", exact: true });
-  await expect(dialog).toContainText("当前选中40件");
-  await expect(dialog.getByRole("button", { name: "提交本次研究", exact: true })).toBeDisabled();
-  await page.keyboard.press("Escape"); await expect(launcher).toBeFocused(); expect(writes).toEqual([]);
+test("shared Agent requires confirmation and retries exact selected scope idempotently",async({page})=>{
+  await fixture(page);const bodies:any[]=[];
+  await page.route('**/api/projects/10/studies',async r=>{bodies.push(r.request().postDataJSON());await r.fulfill(bodies.length===1?{status:503,json:{error:{code:'offline',message:'Synthetic unavailable'}}}:{json:{id:901}})});
+  await page.goto('/projects/10?view=products&q=Intel&sort=price');
+  const boxes=page.getByRole('checkbox',{name:/^选择 /});await boxes.nth(0).check();await boxes.nth(1).check();
+  await page.getByRole('button',{name:'AI 分析选中商品',exact:true}).click();
+  const agent=page.getByRole('complementary',{name:'SecondPick Agent 对话栏'});
+  await agent.getByRole('textbox',{name:'给 Agent 的指令'}).fill('深入调查这些商品');
+  await agent.getByRole('button',{name:'发送',exact:true}).click();
+  await expect(agent).toContainText('#111、#112');expect(bodies).toEqual([]);
+  const confirm=agent.getByRole('button',{name:'确认并创建研究任务'});await confirm.click();
+  await expect(agent.getByRole('alert')).toContainText('Synthetic unavailable');await confirm.click();
+  await expect(agent).toContainText('研究 #901 已创建');expect(bodies).toHaveLength(2);
+  expect(bodies[0].ids).toEqual([111,112]);expect(bodies[0].request_key).toBe(bodies[1].request_key);
+  expect(bodies[0].expected_goal_revision).toBe(1);expect(bodies[0].question).toContain('不得更改持久研究策略');
+  await agent.getByRole('button',{name:'收起 Agent'}).click();await expect(boxes.nth(0)).toBeChecked();
 });
 
-test("single candidate seller investigation reuses the existing endpoint and shows a cached profile truthfully", async ({ page }) => {
-  await fixture(page);
-  let calls = 0;
-  await page.route("**/api/projects/10/listings/101/seller/studies", async route => { calls++; await route.fulfill({ json: { seller_id: "saved-seller", profile: {}, result: null, fresh: true, observed_at: null, researched_at: null } }); });
-  await page.goto("/projects/10?view=shortlist");
-  await page.getByRole("button", { name: "AI 对比候选", exact: true }).click();
-  const dialog = page.getByRole("dialog", { name: "SecondPick Agent", exact: true });
-  await expect(dialog).toContainText("共 1 件");
-  await dialog.getByRole("textbox", { name: "给 Agent 的指令", exact: true }).fill("");
-  await dialog.getByRole("button", { name: "分析已保存的卖家资料", exact: true }).click();
-  await expect(dialog).toContainText("已复用现有卖家档案"); expect(calls).toBe(1);
-  await expect(dialog.getByRole("alert")).toHaveCount(0);
-  await dialog.getByRole("button", { name: "查看商品与卖家证据", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "商品与卖家证据", exact: true })).toBeVisible();
+test("candidate comparison and report follow-up share chat with explicit evidence provenance",async({page})=>{
+  await fixture(page);const turns:any[]=[];
+  await page.route('**/api/projects/10/agent-chat',async r=>{if(r.request().method()==='POST'){turns.push(r.request().postDataJSON());await r.fulfill({json:{id:1}})}else await r.fulfill({json:{items:[]}})});
+  await page.goto('/projects/10?view=shortlist&compare=101,102');
+  await page.getByRole('button',{name:'向 Agent 提问',exact:true}).click();
+  const agent=page.getByRole('complementary',{name:'SecondPick Agent 对话栏'});
+  await expect(agent.getByRole('textbox',{name:'给 Agent 的指令'})).toHaveValue(/比较这些商品/);
+  await agent.getByRole('button',{name:'发送',exact:true}).click();await expect.poll(()=>turns.length).toBe(1);
+  expect(turns[0].ids).toEqual([101,102]);expect(turns[0].report_id).toBe(1);
+  await page.goto('/projects/10?view=overview');await page.getByRole('button',{name:'带着结论继续问'}).click();
+  await agent.getByRole('textbox',{name:'给 Agent 的指令'}).fill('为什么报告有这些结论？');
+  await agent.getByRole('button',{name:'发送',exact:true}).click();await expect.poll(()=>turns.length).toBe(2);
+  expect(turns[1].report_id).toBe(1);expect(turns[1].ids).toEqual([101]);
+});
+
+test("goal and monitor requests open explicit editing workflows without persistent writes",async({page})=>{
+  const {writes}=await fixture(page);await page.goto('/projects/10?view=research');
+  await page.getByRole('button',{name:'打开项目 Agent'}).click();
+  const agent=page.getByRole('complementary',{name:'SecondPick Agent 对话栏'});
+  await agent.getByRole('textbox',{name:'给 Agent 的指令'}).fill('把预算改为6000元');await agent.getByRole('button',{name:'发送',exact:true}).click();
+  const goal=page.getByRole('dialog',{name:'调整选购条件',exact:true});await expect(goal.getByLabel('修改意图')).toHaveValue('把预算改为6000元');
+  expect(writes).toEqual([]);page.once('dialog',d=>d.accept());await goal.getByRole('button',{name:'关闭调整选购条件'}).click();
+  await agent.getByRole('textbox',{name:'给 Agent 的指令'}).fill('新建 Intel iMac 长期监控');await agent.getByRole('button',{name:'发送',exact:true}).click();
+  await expect(page.getByLabel('调整哪项监控')).toBeVisible();expect(writes).toEqual([]);
+});
+
+test("oversized selection is not silently truncated and hiding Agent preserves keyboard workflow",async({page})=>{
+  const {writes}=await fixture(page,'many');await page.goto('/projects/10?view=products');
+  await page.getByRole('checkbox',{name:'全选当前页',exact:true}).check();await expect(page.getByRole('button',{name:'AI 分析选中商品',exact:true})).toBeDisabled();
+  const launcher=page.getByRole('button',{name:'打开项目 Agent'});await launcher.click();
+  const agent=page.getByRole('complementary',{name:'SecondPick Agent 对话栏'});
+  await expect(agent).toContainText('商品范围暂不可用');
+  await expect(agent.getByRole('button',{name:'发送',exact:true})).toBeDisabled();
+  await agent.getByRole('button',{name:'收起 Agent'}).click();await expect(launcher).toBeVisible();expect(writes).toEqual([]);
+});
+
+test("seller analysis uses saved profile endpoint and truthfully reports cached result",async({page})=>{
+  await fixture(page);let calls=0;
+  const seller={seller_id:'synthetic-seller',profile:{},result:null,fresh:true,observed_at:null,researched_at:null};
+  await page.route('**/api/projects/10/listings/101/seller',r=>r.fulfill({json:seller}));
+  await page.route('**/api/projects/10/listings/101/seller/studies',async r=>{calls++;await r.fulfill({json:seller})});
+  await page.goto('/projects/10?view=shortlist');await page.locator('.ux2-decision-card').first().getByRole('button',{name:'查看商品与证据',exact:true}).click();
+  const drawer=page.getByRole('dialog',{name:'商品与卖家证据',exact:true});await drawer.getByRole('button',{name:'复用已有研究档案',exact:true}).click();
+  await expect(drawer).toContainText('已复用该卖家的有效档案');await expect(drawer).toContainText('不自动访问卖家主页或补抓');expect(calls).toBe(1);
 });

@@ -1,4 +1,3 @@
-// @ts-expect-error Vitest provides Node APIs while the app tsconfig excludes Node types.
 import { readFileSync } from "node:fs";
 
 import { cleanup, render, screen } from "@testing-library/react";

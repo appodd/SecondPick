@@ -17,6 +17,7 @@ test("P1 scoped approval, results, refresh and narrow layout without AI", async 
     { id:91,kind:"collection",task_id:10,request_id:5,retry_of:null,query:"",max_pages:1,actions:["detail"],listing_ids:[1879],state:"completed",stage:"completed",error_code:null,error_detail:null,result:{run_ids:[1],listing_count:1},verify_requested:false,stop_requested:false,created_at:"2026-10-24",completed_at:"2026-10-24",analysis_operation_id:null } }));
   let aiCalls = 0; page.on("request", req => { if (req.method()==="POST" && /\/studies(?:\?|$)/.test(req.url())) aiCalls++; });
   await page.goto("/projects/10?view=research");
+  await page.getByText("补充取证与调查建议",{exact:true}).click();
   const panel=page.getByRole("region",{name:"调查建议与执行"});
   await panel.getByRole("button",{name:"整理已有研究的调查建议"}).click();
   await expect(panel.getByText("等待确认",{exact:true})).toBeVisible(); expect(calls).toBe(0);
@@ -24,7 +25,7 @@ test("P1 scoped approval, results, refresh and narrow layout without AI", async 
   await expect(panel.getByText("已批准，尚未执行",{exact:true})).toBeVisible(); expect(calls).toBe(0);
   await panel.getByRole("button",{name:"确认执行（仅 1 件详情）"}).click();
   await expect(panel.getByText("已获得新证据",{exact:true})).toBeVisible(); await expect(panel.getByText(/原报告和历史判断尚未/)).toBeVisible();
-  await page.reload(); await expect(panel.getByText("已获得新证据",{exact:true})).toBeVisible(); expect(calls).toBe(1); expect(aiCalls).toBe(0);
+  await page.reload(); await page.getByText("补充取证与调查建议",{exact:true}).click(); await expect(panel.getByText("已获得新证据",{exact:true})).toBeVisible(); expect(calls).toBe(1); expect(aiCalls).toBe(0);
   await panel.scrollIntoViewIfNeeded(); await page.screenshot({path:info.outputPath("p1-investigations.png")});
   expect(await page.evaluate(() => document.documentElement.scrollWidth<=window.innerWidth+1)).toBe(true);
 });

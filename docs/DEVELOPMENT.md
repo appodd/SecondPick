@@ -12,6 +12,13 @@
 
 ## 安装与检查
 
+推荐 Windows Python 3.12 与 Node.js 24（本轮使用 3.12.10、24.15.0、npm 11.12.1）。Node.js 用于前端开发和测试，普通用户运行已构建工作台不需要它。请在当前源码目录创建独立环境，不复用其他 checkout 的 editable 安装：
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
 ```powershell
 # Recommended reproducible backend test environment: Windows Python 3.12.
 python -m pip install -r requirements/backend-tests-windows-py312.lock.txt
@@ -41,6 +48,41 @@ Windows 上如需指定 pytest 的 `--basetemp`，请使用系统临时目录中
 后端测试应使用临时数据库和模拟运行时。离线保护插件阻止外部 DNS、网络图片工作线程和真实 Codex 启动；故意验证网络边界的测试需要注入模拟传输，不应关掉保护绕过失败。
 
 已完成的回归与独立安装检查见[验证记录](VALIDATION.md)。离线测试不等于真实平台、模型效果或长期运行验收。前端构建存在大于 500 kB 的包体积提示。
+
+### Desktop E2E
+
+SecondPick 是 Desktop-first 的本地单用户工作台。**Desktop Chromium 是唯一默认 E2E 验收平台**；默认不注册 Mobile project，不要求手机适配。保留的桌面尺寸、键盘、抽屉与布局检查不代表移动端支持承诺。
+
+```powershell
+# 后端依赖已按上方锁文件安装；前端浏览器与 Python Playwright 分别安装。
+Set-Location web
+npm ci
+npx playwright install chromium
+npm run test:e2e -- --list
+npm run test:e2e
+```
+
+Playwright 自动启动 8876 端口的临时夹具服务，不复用已有服务。夹具用合成商品、临时数据库、模拟采集和模拟 Runtime，Python 离线保护及浏览器本地代理边界阻止真实平台和模型调用。默认套件不读取维护者的历史 JSON；行情投影与视觉观察数据在 `web/e2e/synthetic-market.ts` 及对应 spec 中明确构造。后端仍有五项显式可选历史验收测试，缺少私有材料时跳过，不应复制真实材料补齐。
+
+失败证据在 `web/test-results/`，可用 `npx playwright show-trace <trace.zip>` 查看。不要删除断言、恢复过时按钮或增加固定 sleep 来处理失败；检查当前 UI、接口契约及任务持久化完成状态。
+
+### 前后端开发联调
+
+在已激活同一个项目虚拟环境的两个终端中分别运行：
+
+```powershell
+# 仓库根目录，后端默认端口 8765。
+shopping-agent-web --host 127.0.0.1 --port 8765
+
+# 第二个终端，仓库根目录。
+npm --prefix web run dev
+```
+
+打开 `http://127.0.0.1:5173`。Vite 固定本机 5173 端口并将 `/api` 代理至 `http://127.0.0.1:8765`；端口占用时明确退出，不静默换端口。代理保留浏览器请求的 Host，避免写请求的 Origin 与后端看到的 URL 不一致。后端的 loopback Host 和同源写入检查保持启用，不要通过放宽 CORS、重写 Origin 或关闭校验解决联调问题。若改变后端端口，须同步调整 `web/vite.config.ts` 的代理目标。
+
+开发服务使用配置指定的数据库；新环境默认初始化本地数据，调试时应提供专用 `--config` 和 `--settings`，不要对真实采集数据库运行测试。采集、登录和模型服务仍需用户独立配置与明确授权。
+
+生产模式使用 `npm --prefix web run build` 后由后端同源提供静态资源，无需运行 Vite。`npx tsc --noEmit`（在 web 内）、`npm --prefix web test` 分别检查类型和组件/单元测试；当前没有独立 lint script。
 
 ## 开发工具索引
 
