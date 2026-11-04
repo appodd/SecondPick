@@ -63,7 +63,8 @@ async def collect(root, directory, *, status=None):
         status.update("collecting", outcome["error_code"])
 
     repair_detail_control_flow(scraper, on_control_failure=control_failure)
-    scraper.async_playwright = protected_playwright(scraper.async_playwright, credentials)
+    scraper.async_playwright = protected_playwright(scraper.async_playwright, credentials,
+        browser_channel=job.get('browser_channel'))
 
     class ObservedGuard(FailureGuard):
         def record_failure(self, task_key, reason, **kwargs):

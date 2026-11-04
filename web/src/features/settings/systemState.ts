@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, request } from "../../api/client";
 import { browserApi, isBrowserActive, type BrowserStatus } from "../../api/browserClient";
-import { monitorApi, type MonitorReadiness } from "../../api/monitorClient";
+import { monitorApi, engineCheckGuidance, type MonitorReadiness } from "../../api/monitorClient";
 import type { SetupStatus } from "../../api/types";
 import { useEffect, useState } from "react";
 import type { StatusKind } from "../../components/status/statusModel";
@@ -26,9 +26,11 @@ export function serviceStates(setup?: SetupStatus, browser?: BrowserStatus, engi
     : !setup.codex.auth_available && setup.codex.detail === "check failed" ? { label: "检测未完成", tone: "unknown", detail: "CLI 已找到，但授权检查执行失败或超时，无法确认授权状态。请稍后重试检测。" }
     : !setup.codex.auth_available ? { label: "授权未通过", tone: "warn", detail: "CLI 已找到，但授权检测未通过。请在后端所在设备完成现有 CLI 授权后重新检测。" }
     : { label: "CLI 与授权可用", tone: "good", detail: "基础检测通过；不等于已完成真实研究任务测试。" };
+  const failure = engine?.checks.find(check => !check.ok);
+  const guidance = failure && engineCheckGuidance[failure.code];
   const collection: ServiceState = !engine ? { label: "尚未检查", tone: "unknown", detail: "可手动检查本地采集环境，不访问闲鱼；引擎启用状态仍由项目监控接口决定。" }
     : engine.ready ? { label: "环境检查通过", tone: "good", detail: "仅确认最近一次本地依赖与浏览器探测通过，不代表正在采集或已启用。" }
-    : { label: "环境需要处理", tone: "warn", detail: "本地采集环境检查未通过，修复后可重新检测。" };
+    : { label: guidance?.label ?? "环境需要处理", tone: "warn", detail: guidance?.detail ?? "本地采集环境检查未通过，修复后可重新检测。" };
   return { environment, xianyu, codex, collection };
 }
 

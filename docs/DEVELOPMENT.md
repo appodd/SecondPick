@@ -41,6 +41,12 @@ python devtools/release_audit.py HEAD
 
 `monitor` 扩展为 Windows 安装后端测试需要的时区数据，部分后端测试也使用 Chromium。需要前端浏览器测试时，再在 `web` 目录执行 `npm run test:e2e`；配置会在独立端口启动隔离夹具服务。不要把真实运行服务设为 E2E 测试目标。
 
+准备产品的真实采集依赖时，在停止服务后执行 `python scripts/setup_monitor.py`：自动获取受支持的固定版本引擎、创建独立环境、安装锁定依赖与用户级 Chromium，并检查环境、生成本地配置。它不执行登录、采集或模型请求。无需为了离线单元测试运行该安装；安装流程测试使用临时 checkout 和模拟安装。`--check-only` 只诊断；已有配置和冲突目录不会覆盖，完整操作见[使用指南](user-guide.md#准备独立采集环境)。
+
+准备程序分别使用应用解释器与独立采集解释器安装各自 Playwright 所需的 Chromium；它们可能使用不同版本，不能只安装其中一个后假定两者都可用。下方前端 E2E 的 Node Playwright 浏览器准备仍须单独执行。
+
+普通 `shopping-agent-web` 优先读取 `config/monitor.local.toml`，不存在时回退 `config/default.toml`；显式 `--config` 优先且路径必须存在。调试和测试应继续明确传入隔离配置，避免误用用户安装。
+
 Windows 后端测试使用 `PYTHONUTF8=1`，使测试及子进程生成的 UTF-8 文件按相同编码读写。少量历史验收测试仅在对应本地材料存在时运行；这些真实材料不随公开源码分发，缺失时会明确跳过，合成数据回归仍照常执行。
 
 锁文件仅供完整后端回归使用，包含可选视觉测试依赖和 pytest-xdist，不改变用户的基础安装依赖。其他平台可按 `pyproject.toml` 安装测试扩展后单独验证。切换源码目录时注意 editable 安装的导入位置；独立候选须在自己的环境安装，不能只切换工作目录就假定已加载候选源码。
@@ -101,7 +107,7 @@ npm --prefix web run dev
 | `scripts/replay_check_context.py` | 默认仅列计划；`--run --output` 执行；`--reviews` 切换为用户复核来源与失效检查 | 合成输入，调用上限 3；指定报告保存结果与遥测 |
 | `scripts/replay_check_suggestions.py` | 默认仅列计划；`--run --output` 执行两轮建议与模拟用户确认流程 | 调用上限 2；临时数据库中的确认不代表对真实用户项目授权 |
 | `scripts/audit_answer_copy.py` | 读取位置参数指定的已有报告，`--output` 必填；仅文字检查，不调用模型 | 写新报告，不覆盖输入或已有输出 |
-| `scripts/setup_monitor.py` | 默认准备独立引擎环境；`--venv` 可指定环境；`--check-only` 检查已有环境而不安装依赖或生成本地配置 | 默认 `.monitor-venv/`，安装清单写入其中的 `installed-packages.txt`；检查成功且配置不存在时生成 `config/monitor.local.toml`，不自动启动服务或采集 |
+| `scripts/setup_monitor.py` | 获取固定版本引擎、准备独立依赖与浏览器并检查；`--root`、`--venv`、`--config` 支持自定义路径；`--check-only` 不安装、不写配置 | 默认 `.monitor-venv/`；检查成功且文件不存在时原子生成 `config/monitor.local.toml`，普通启动器自动使用；不启动服务或采集 |
 
 五个 `replay_*.py` 工具默认计划模式只输出标准输出，没有默认持久化报告目录。执行、诊断或重评分时，使用调用者指定的 `--output` 新文件，已有输出会被拒绝覆盖。真实执行的合成工作区、数据库等位于系统临时目录，正常退出时清理；不要依赖临时文件作为长期证据。重评分和 audit 读取的是调用者提供的报告，不要求维护者的历史数据。
 

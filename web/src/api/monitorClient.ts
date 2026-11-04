@@ -19,6 +19,16 @@ export interface Monitor extends MonitorScope {
 }
 export interface MonitorPage { enabled: boolean; platform_enabled: boolean; candidate_pool_count: number; items: Monitor[] }
 export interface MonitorReadiness { ready: boolean; checked_at: string; checks: { code: string; ok: boolean }[] }
+export const engineCheckGuidance: Record<string, { label: string; detail: string }> = {
+  configuration: { label: '采集配置不完整', detail: '运行统一准备命令生成本地配置；已有自定义配置请先核对路径，不会自动覆盖。' },
+  source: { label: '采集引擎尚未安装', detail: '统一准备命令会自动获取项目支持的固定版本，无需手动克隆另一个项目。' },
+  revision: { label: '引擎版本或源码检查未通过', detail: '请核对 Git、引擎版本与本地修改。准备程序不会重置已有目录；请保留修改并按终端提示处理。' },
+  python: { label: '独立 Python 环境尚未准备', detail: '统一准备命令会创建或修复独立采集依赖，不改动工作台的 Python 环境。' },
+  dependencies: { label: '采集依赖未就绪', detail: '停止工作台后重新运行统一准备命令，按锁定依赖修复并检查环境。' },
+  control_flow: { label: '采集适配不兼容', detail: '检查是否使用项目固定支持的引擎与依赖，不要自行替换为上游最新版。' },
+  browser: { label: '采集浏览器未就绪', detail: '统一准备命令会安装用户级 Chromium。已有配置指定系统 Chrome 或 Edge 时，请确认对应浏览器可用。' },
+  probe: { label: '环境探测未完成', detail: '检查终端中的失败阶段、权限或超时，处理后重新运行准备命令。' },
+};
 export interface DiagnosticPage {
   items: { id: number; phase: string; code: string; created_at: string; counts: Record<string, number> }[];
   has_more: boolean; next_before_id: number | null;

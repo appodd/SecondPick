@@ -64,7 +64,7 @@ def monitor_cookies(state):
     return dict(cookies=cookies, origins=[])
 
 
-def protected_playwright(factory, state):
+def protected_playwright(factory, state, *, browser_channel=None):
     """Keep native navigation while enforcing launch/context protection."""
     class Browser:
         def __init__(self, native):
@@ -84,7 +84,7 @@ def protected_playwright(factory, state):
             self.native = native
 
         async def launch(self, **kwargs):
-            channel = kwargs.get("channel")
+            channel = browser_channel if browser_channel is not None else kwargs.get("channel")
             if channel not in (None, "chrome", "msedge", "chromium") or kwargs.get("proxy"):
                 raise RuntimeError("Unsupported monitor browser configuration")
             return Browser(await self.native.launch(headless=True, chromium_sandbox=True,

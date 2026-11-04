@@ -3,6 +3,7 @@ import { browserStageLabel, isBrowserActive } from "../../api/browserClient";
 import { type ServiceState, type SystemState } from "./systemState";
 import { StatusBadge as SharedStatusBadge } from "../../components/status/ExecutionStatus";
 import { serviceStatus } from "../../components/status/statusModel";
+import { engineCheckGuidance } from "../../api/monitorClient";
 
 export function StatusBadge({ state }: { state: ServiceState }) {
   return <SharedStatusBadge status={serviceStatus(state)} className="ss-badge" />;
@@ -73,7 +74,14 @@ export function EnginePanel({ system }: { system: SystemState }) {
   const checked = system.engine.data?.result;
   return <section className="ss-card"><div className="ss-panel-title"><Activity /><div><h2>采集引擎</h2><p>检查引擎配置、采集依赖及浏览器，不访问商品或验证闲鱼登录。</p></div><StatusBadge state={system.states.collection} /></div>
     <p>{system.states.collection.detail}</p><p>最近环境检查：{checked?.checked_at ? new Date(checked.checked_at).toLocaleString() : "尚无结果"}</p>
-    {checked?.checks.map(check => <div className="ss-row" key={check.code}><b>{({ configuration: "引擎配置", revision: "引擎版本兼容性", python: "Python 环境", dependencies: "采集依赖", control_flow: "采集控制流程", browser: "浏览器启动", probe: "探测进程" } as Record<string, string>)[check.code] ?? check.code}</b><ObservedServiceBadge system={system} source="engine" state={{ label: check.ok ? "通过" : "未通过", tone: system.engine.isError ? "unknown" : check.ok ? "good" : "warn", detail: "" }} /></div>)}
+    {checked?.checks.map(check => <div className="ss-row" key={check.code}><div><b>{({ configuration: "引擎配置", source: "引擎安装", revision: "引擎版本兼容性", python: "Python 环境", dependencies: "采集依赖", control_flow: "采集控制流程", browser: "浏览器启动", probe: "探测进程" } as Record<string, string>)[check.code] ?? check.code}</b>{!check.ok ? <p>{engineCheckGuidance[check.code]?.detail}</p> : null}</div><ObservedServiceBadge system={system} source="engine" state={{ label: check.ok ? "通过" : check.code === 'source' ? "未安装" : "未通过", tone: system.engine.isError ? "unknown" : check.ok ? "good" : "warn", detail: "" }} /></div>)}
+    <details open={!checked?.ready} className="ss-notice neutral"><summary>安装或修复采集环境</summary>
+      <p>先停止当前工作台，在仓库根目录激活项目 Python 环境，然后运行：</p>
+      <pre><code>python scripts/setup_monitor.py</code></pre>
+      <p>程序会获取固定版本引擎、准备独立依赖与用户级浏览器，并检查环境。已有配置与数据会保留；如遇本地修改或版本冲突，按终端提示处理，不要直接重置目录。</p>
+      <p>成功后运行 <code>shopping-agent-web</code>，再回到这里检查。显式使用自定义配置启动的用户需核对原配置；安装不会创建任务、登录闲鱼或启动真实采集。</p>
+      <a href="https://github.com/appodd/SecondPick/blob/main/docs/user-guide.md#准备独立采集环境" target="_blank" rel="noreferrer">完整安装与修复说明</a>
+    </details>
     <div className="ss-panel-foot"><ActionButton system={system} kind="engine">检查采集引擎环境</ActionButton></div>
     <p className="ss-fine">引擎检查通过不代表闲鱼登录有效，也不会启动监控。缺少引擎配置或依赖时，按检查结果在本机补齐后重新检查。</p></section>;
 }

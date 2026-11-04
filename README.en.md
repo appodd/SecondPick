@@ -44,6 +44,8 @@ Adapter interfaces, placeholder classes, and price-reference plans are not compl
 - **The Agent researches.** It examines saved evidence against your shopping goal and produces candidate reasoning, uncertainties, and questions to verify. Research can be started manually or scheduled when its conditions are met.
 - **The controls are separate.** Collection does not mean AI has already analyzed an item. Automatic research depends on authorization, pause state, and an eligible queue. Each report covers its own sample and goal.
 
+In AI-enhanced mode, describe your shopping goal and collection scope in natural language to generate an editable monitoring draft. Review its keywords, mode, interval, and per-round limits, then preview and confirm before execution. Drafting requires Codex CLI and authentication and calls AI; it does not start collection. This is task configuration after deployment, separate from installing the collection engine.
+
 > The illustration shows the full workflow; AI analysis is optional. **Xianyu is the main collection platform currently supported**—“multi-source” does not mean multiple marketplaces are integrated. A search match is not proof of suitability, and research findings still need verification.
 
 ### An example: shopping for a used laptop
@@ -69,14 +71,24 @@ Inspect and reuse it if found; otherwise obtain the project from
 https://github.com/appodd/SecondPick.
 Read README.en.md, docs/agent-prompts.md, docs/user-guide.md, and docs/DEVELOPMENT.md.
 Follow the docs to inspect the environment, plan and install required dependencies,
-start the workspace, and guide me through onboarding. Ask whether I want Basic
-collection or AI-enhanced mode, then prepare the chosen capabilities; vision is optional.
+start the workspace, and guide me through onboarding. For a new installation, create
+the project environment with Python 3.12, install the app, then run python scripts/setup_monitor.py.
+Let this program prepare the pinned engine, isolated dependencies, and browsers;
+I should not have to obtain or configure the external engine manually.
+For an existing installation, stop the workspace normally within authorization and run
+the same preparation command in its original project environment. After success, run
+shopping-agent-web from the repository root; it automatically loads generated local configuration.
+Preserve an existing explicit custom configuration, startup method, and data locations.
+Ask whether I want Basic collection or AI-enhanced mode. Basic collection needs no
+Codex CLI; prepare AI only when requested, and keep vision optional.
 For AI, first check whether existing Codex CLI and authentication are usable by the
 SecondPick service. Reuse them when compatible; do not reinstall or request login again.
 If they are unsuitable, explain the additional configuration needed.
 Preserve existing data and configuration. I will handle account login myself.
 Explain the scope and obtain the appropriate confirmation before real collection,
 persistent configuration changes, or automatic research authorization.
+Installation and onboarding must not start real collection or authorize research;
+do not use collection or model calls as default deployment tests.
 Report the URL, actual checks performed, and remaining steps for me.
 ```
 
@@ -94,37 +106,37 @@ Use this path if you do not have a local Agent or prefer to manage the environme
 | --- | --- |
 | Primarily validated environment | Windows 10/11 with PowerShell |
 | Python | Python 3.12 recommended |
-| Browser | Playwright Chromium for app browser flows; the separate engine also checks system Chrome |
+| Git and network | The preparation script uses Git to fetch the pinned engine and downloads dependencies and browsers |
+| Browser | The preparation script installs user-level Playwright Chromium for login and collection; no system Chrome installation is required |
 | Node.js | Not needed to launch the included frontend build; needed for frontend development |
 | AI runtime | Codex CLI and authentication only for AI drafting, research, or follow-up questions |
 | Vision model | Optional in both modes; not required for onboarding or text research |
 
 Compatibility note: [pyproject.toml](pyproject.toml) declares Python 3.9+ for the app; the [separate engine setup script](scripts/setup_monitor.py) requires 3.11+. On Windows, Python 3.12 uses the provided [locked dependencies](requirements/monitor-engine-windows-py312.lock.txt). Other versions still need successful dependency installation and engine checks; they are not all validated environments.
 
-#### 1. Launch the workspace
+#### 1. Install the app, prepare collection, and launch
 
 ```powershell
 git clone --branch main https://github.com/appodd/SecondPick.git
 Set-Location SecondPick
 
-python -m venv .venv
+py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -e .
+python scripts/setup_monitor.py
 
 shopping-agent-web
 ```
 
-Open [http://127.0.0.1:8765](http://127.0.0.1:8765) to view the workspace and onboarding. This minimal launch path needs neither CLI nor vision dependencies; it does not prepare real collection yet.
+The preparation script fetches the pinned engine, creates its isolated environment, installs locked dependencies and browsers, checks readiness, and creates local configuration. The normal launcher automatically uses that configuration. It does not log in, create monitoring tasks, collect listings, or call models. Git and network access are required; failures report their stage and can be retried.
 
-#### 2. Prepare collection and complete Basic setup
+The app's login browser and the isolated collection browser may use different Playwright versions. The preparation script installs the required Chromium for each; no separate browser installation is needed.
 
-In the activated virtual environment, install Chromium for the app's login browser:
+Open [http://127.0.0.1:8765](http://127.0.0.1:8765) to enter onboarding.
 
-```powershell
-python -m playwright install chromium
-```
+#### 2. Complete onboarding and log in to Xianyu
 
-Real monitoring also needs a [separate collection engine (Chinese guide)](docs/user-guide.md#准备独立采集环境), its dependency and system Chrome checks, and the correct local service configuration. Choose **Basic mode** in onboarding, pass the application, collection-environment, and Xianyu connection checks, then select **完成基础配置并开始使用**.
+The preparation script above has prepared the engine and browsers. Choose **Basic mode** in onboarding, recheck the collection environment, verify the Xianyu connection, then select **完成基础配置并开始使用**. For installation failures or custom configurations, see [installation and repair (Chinese guide)](docs/user-guide.md#准备独立采集环境).
 
 Log in to Xianyu yourself: **keep the opened browser running, return to the app to verify the connection, and close the browser only after verification.**
 
@@ -133,6 +145,17 @@ Log in to Xianyu yourself: **keep the opened browser running, return to the app 
 Enter the goal, budget, requirements, and preferences manually. Configure the keywords, monitoring mode, and per-round scope; preview and confirm before starting collection. Browse, filter, and save records in All Listings. Collection-only use requires neither CLI nor automatic research authorization. See the [collection-only guide (Chinese)](docs/user-guide.md#只抓取的使用方式).
 
 A fresh installation has no preloaded projects, listings, or reports.
+
+#### Update an existing installation and run diagnostics
+
+Stop the workspace normally, then run from the repository root in the original, activated project Python environment:
+
+```powershell
+python scripts/setup_monitor.py
+shopping-agent-web
+```
+
+For read-only checks, use `python scripts/setup_monitor.py --check-only`. Existing configuration and data are preserved; conflicting versions, local changes, or unknown directories stop preparation with instructions. If the installation uses explicit custom configuration, retain its original `--config` path for preparation, diagnostics, and startup. Existing configurations selecting system Chrome or Edge still require that browser to be available. See [installation and repair (Chinese guide)](docs/user-guide.md#准备独立采集环境).
 
 #### Optional: AI and image capabilities
 

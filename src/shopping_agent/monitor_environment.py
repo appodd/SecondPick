@@ -11,7 +11,7 @@ from shopping_agent.db import utc_now_iso
 from shopping_agent.monitor_engine import GoofishEngine, EngineError, run_process
 from shopping_agent.goofish_browser import collection_environment
 
-CHECKS = {"configuration", "revision", "python", "dependencies", "control_flow", "browser", "probe"}
+CHECKS = {"configuration", "source", "revision", "python", "dependencies", "control_flow", "browser", "probe"}
 
 
 def check_monitor_environment(config):
@@ -20,6 +20,9 @@ def check_monitor_environment(config):
         return dict(ready=bool(checks) and all(c["ok"] for c in checks), checks=checks, checked_at=utc_now_iso())
     cfg = config.monitor_engine
     checks.append(dict(code="configuration", ok=cfg.root is not None and cfg.python is not None))
+    if not checks[-1]["ok"]:
+        return result()
+    checks.append(dict(code="source", ok=cfg.root.is_dir()))
     if not checks[-1]["ok"]:
         return result()
     try:
@@ -36,8 +39,10 @@ def check_monitor_environment(config):
     try:
         with tempfile.TemporaryDirectory(prefix="shopping-monitor-check-") as directory:
             output = Path(directory) / "result.json"
-            run_process([str(cfg.python.resolve()), "-X", "utf8", str(Path(__file__).with_name("monitor_probe.py")),
-                str(root), str(output)], cwd=directory, env=env, stop=threading.Event(), timeout=45)
+            command = [str(cfg.python.resolve()), "-X", "utf8", str(Path(__file__).with_name("monitor_probe.py")), str(root), str(output)]
+            if cfg.browser_channel is not None:
+                command.append(cfg.browser_channel)
+            run_process(command, cwd=directory, env=env, stop=threading.Event(), timeout=45)
             if output.is_file():
                 with output.open("rb") as stream:
                     raw = stream.read(4097)

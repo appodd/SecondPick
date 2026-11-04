@@ -4,9 +4,9 @@
 
 在 Windows 10/11 的 PowerShell 中按[首页](../README.md)安装。前端构建产物已随源码提供。需要重建时执行 `npm --prefix web ci` 和 `npm --prefix web run build`。
 
-运行 `shopping-agent-web` 后访问 `http://127.0.0.1:8765`。默认使用 `config/default.toml` 和本机的 `data/settings.json`，浏览器登录资料默认位于 `data/browser-profile/`。已有安装应沿用原配置和数据目录，不要为了升级删除数据库。
+运行 `shopping-agent-web` 后访问 `http://127.0.0.1:8765`。未指定 `--config` 时优先读取 `config/monitor.local.toml`，不存在则使用 `config/default.toml`；显式 `--config` 始终优先，路径不存在会报错。用户设置默认位于 `data/settings.json`，浏览器登录资料默认位于 `data/browser-profile/`。已有安装应沿用原配置和数据目录，不要为了升级删除数据库。
 
-基础安装使用 `python -m pip install -e .`，无需 Codex CLI 或视觉扩展即可启动工作台。准备闲鱼登录前运行 `python -m playwright install chromium`，真实采集还需下述独立引擎环境。需要视觉分析时再安装 `python -m pip install -e ".[vision]"` 并配置模型；仅需商品图片缓存的解码校验时可单独安装 `python -m pip install "Pillow>=10.0.0"`，不需要视觉模型。
+基础安装使用 `python -m pip install -e .`，随后运行 `python scripts/setup_monitor.py` 统一准备采集环境，再运行 `shopping-agent-web`。无需 Codex CLI 或视觉扩展。需要视觉分析时再安装 `python -m pip install -e ".[vision]"` 并配置模型；仅需商品图片缓存的解码校验时可单独安装 `python -m pip install "Pillow>=10.0.0"`，不需要视觉模型。
 
 ## 首次配置
 
@@ -25,27 +25,49 @@ AI 研究需要本机可用的 Codex CLI；可以用 `codex login status` 检查
 
 ### 准备独立采集环境
 
-以下用于首次准备当前代码支持的监控环境。应用元数据要求 Python 3.9+，但独立引擎安装脚本要求 **3.11+**；建议使用 Windows Python **3.12**，以匹配仓库提供的锁定依赖。还需安装系统 Chrome，并通过本地浏览器探测。
+以下同一入口用于首次安装和后续修复。应用元数据要求 Python 3.9+，统一准备程序要求 **3.11+**；推荐 Windows Python **3.12**，以匹配仓库提供的锁定依赖。需要 Git 和网络访问 GitHub、PyPI 与 Playwright 浏览器下载服务。
 
 如果已存在引擎目录、本地配置或正在运行的服务，先核对版本、路径和数据；不要重复克隆、覆盖配置或同时启动第二个实例。
 
 ```powershell
-# 在项目根目录执行；引擎目录尚不存在时才克隆。
-git clone https://github.com/Usagi-org/ai-goofish-monitor.git data/research/ai-goofish-monitor
-git -C data/research/ai-goofish-monitor checkout f85d140b6b45029d9a0925feb96dad733b41396d
-
+# 在项目根目录、已激活项目 Python 环境的终端中执行；先正常停止工作台。
 python scripts/setup_monitor.py
+shopping-agent-web
 ```
 
-版本以当前 `src/shopping_agent/monitor_engine.py` 中的 `SUPPORTED_REVISION` 为准，不随意替换为引擎最新分支。安装脚本准备 `.monitor-venv` 并检查环境；失败时先修复检查项，不跳过兼容性检查。
+程序自动获取 `SUPPORTED_REVISION` 指定的引擎版本到 `data/research/ai-goofish-monitor`，创建或复用 `.monitor-venv`，安装配套依赖和用户级 Playwright Chromium，执行依赖、控制流程及浏览器探测。首次生成的配置选择 `browser_channel = "chromium"`，无需安装系统 Chrome；旧配置未指定该项时保留原有系统 Chrome 路线。不会修改上游源码，不启动真实登录、采集或模型请求。
 
-检查通过后，脚本会在文件不存在时生成 `config/monitor.local.toml`。核对其中的数据库、引擎和解释器路径；原默认服务若正在运行，应先正常停止，再使用这个本地配置启动：
+应用登录浏览器使用项目 Python 环境中的 Playwright，采集浏览器使用 `.monitor-venv` 中的 Playwright，两者版本可能不同。统一程序分别准备两者所需的 Chromium，标准流程无需再手动执行浏览器安装；已有配置显式指定 Chrome 或 Edge 时，仍须保证对应浏览器可用。
+
+检查通过后，程序仅在文件不存在时生成 `config/monitor.local.toml`，普通 `shopping-agent-web` 自动读取它。已有配置的数据库、登录资料路径及显式禁用状态均保留。使用其他配置的安装仍可显式启动：
 
 ```powershell
-shopping-agent-web --config config/monitor.local.toml
+shopping-agent-web --config config/my-install.local.toml
 ```
 
-默认的 `shopping-agent-web` 仍读取 `config/default.toml`，不会自动切换配置。安装脚本也不会自动开始真实采集；启动后仍需验证闲鱼登录，在界面核对和确认任务范围。已有安装应沿用自己的原配置，而不是用上述默认路径替换业务数据。
+安装成功表示本地采集依赖已就绪，不代表已登录、已授权任务或正在监控。启动后仍需本人登录并验证闲鱼连接，在界面确认任务范围。已有自定义安装可用 `python scripts/setup_monitor.py --config config/my-install.local.toml` 检查和修复原配置所指向的引擎环境，原文件不会被改写。
+
+### 失败重试与已有环境修复
+
+停止服务后重复运行同一准备命令即可修复缺失依赖、重新准备浏览器及检查环境。已完成的引擎 checkout 会复用，不重复获取；源码下载中断会保留本程序拥有的暂存目录供下次继续。未知目录、用户修改、未跟踪文件、版本不匹配及不同 Python 版本的现有环境会停止并明确提示，不自动 reset、删除或覆盖。
+
+默认安装在原项目环境中执行：
+
+```powershell
+python scripts/setup_monitor.py
+shopping-agent-web
+```
+
+需要保留冲突环境时，可选择新的 `--root`、`--venv` 和 `--config` 路径准备独立环境，再明确使用新配置启动；不要删除旧环境或覆盖原数据。只读诊断使用 `python scripts/setup_monitor.py --check-only`，不会安装或写入配置。程序报告失败阶段；浏览器依赖不足或网络下载失败时，处理对应原因后重试，不跳过检查。
+
+例如，以下路径尚不存在时，可为冲突安装准备另一套环境，保留旧目录和原配置：
+
+```powershell
+python scripts/setup_monitor.py --root data/research/ai-goofish-monitor-supported --venv venv/monitor-supported --config config/monitor-repair.local.toml
+shopping-agent-web --config config/monitor-repair.local.toml
+```
+
+首次引导会分别显示引擎未安装、版本或源码检查失败、独立 Python 缺失、依赖失败及浏览器未就绪，并提供统一准备命令。检查通过只表示环境就绪，不代表监控已启用或登录有效。
 
 ## 新建选购项目
 
@@ -79,6 +101,8 @@ shopping-agent-web --config config/monitor.local.toml
 ### 持续监控：按计划收集商品
 
 创建监控时核对关键词、页数、数量与运行范围。监控采用一次明确范围确认，原范围内定时运行及暂停／恢复不重复确认；改变范围须重新确认。持续监控开关表示是否允许调度，当前采集是否执行应看运行状态。单次采集完成后若要再采一轮，需要重新确认范围。
+
+需要 AI 协助配置时，在监控计划草案中用自然语言描述选购需求和采集范围，点击“AI 生成可编辑草案”，核对并编辑关键词、运行方式、间隔和数量限制，再预览并确认启动。生成草案使用内部 Codex CLI 和认证，会调用模型，但不安装引擎、不直接访问闲鱼，也不授权自动研究；基础采集用户仍可手动填写同一表单。
 
 持续监控在本机服务运行、采集环境和登录状态可用、计划允许时分轮执行。开启后也可能处于等待下一轮，不能把开关打开理解为一直在抓取。可以在“监控任务”查看调度状态、实际执行记录及异常；采集结果保存在“全部商品”。
 

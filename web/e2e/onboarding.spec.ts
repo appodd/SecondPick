@@ -18,6 +18,25 @@ async function readiness(page:Page,{empty=false,ai=false,completed=false}={}) {
 const steps=(page:Page)=>page.getByRole('navigation',{name:'使用引导步骤'});
 test.afterEach(async({page})=>page.unrouteAll({behavior:'wait'}));
 
+test('missing engine has installation guidance and recheck can confirm readiness without installation side effects', async ({page}) => {
+  await readiness(page);
+  const actions:string[]=[];
+  page.on('request', request => { if(request.method()==='POST') actions.push(new URL(request.url()).pathname); });
+  await page.route('**/api/monitor-engine/check', route => {
+    const ready=route.request().method()==='POST';
+    const result={ready,checked_at:new Date().toISOString(),checks:[{code:'configuration',ok:true},{code:'source',ok:ready}]};
+    return route.fulfill({json:ready?result:{result}});
+  });
+  await page.goto('/onboarding?step=0');
+  await expect(page.getByText('采集引擎尚未安装',{exact:true})).toBeVisible();
+  await expect(page.getByText('python scripts/setup_monitor.py',{exact:true})).toBeVisible();
+  await expect(page.getByText('引擎版本兼容性',{exact:true})).toHaveCount(0);
+  expect(actions).toEqual([]);
+  await page.getByRole('button',{name:'检查采集引擎环境',exact:true}).click();
+  await expect(page.getByText('环境检查通过',{exact:true})).toBeVisible();
+  expect(actions).toEqual(['/api/monitor-engine/check']);
+});
+
 test('settings reads local status without starting platform or model actions',async({page})=>{
   const writes:string[]=[];page.on('request',r=>{if(r.method()==='POST')writes.push(r.url())});
   await page.goto('/settings?section=codex');
@@ -69,7 +88,10 @@ test('settings review starts at first step and preserves exact return location a
   await page.goForward();await page.getByRole('button',{name:'暂时关闭',exact:true}).click();await expect(page).toHaveURL(source);expect(patches).toEqual([]);
 });
 test('unsafe wizard return cannot leave workbench',async({page})=>{
-  await readiness(page);await page.goto('/onboarding?returnTo=https%3A%2F%2Fexample.com&step=1');
+  await readiness(page);await page.goto('/onboarding?returnTo=https%3A%2F%2Fexample.com&step=3');
+  // Wait for the mocked readiness responses; closing before they arrive asks
+  // for confirmation and the browser dismisses an unhandled dialog.
+  await expect(page.getByRole('button',{name:'完成基础配置并开始使用'})).toBeEnabled();
   await page.getByRole('button',{name:'暂时关闭',exact:true}).click();await expect(page).toHaveURL('/');
 });
 test('unfinished configuration opened from a project restores its filters',async({page})=>{

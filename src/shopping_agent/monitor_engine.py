@@ -189,7 +189,8 @@ class GoofishEngine:
         (directory / "job.json").write_text(json.dumps(dict(
             source_task=source_task, round_id=round_id, keyword=monitor["keyword"], max_pages=monitor["max_pages"],
             max_items=monitor["max_items"], state_file=str(marker), credential_transport="stdin",
-            collect_seller_profiles=monitor.get("collect_seller_profiles") is True),
+            collect_seller_profiles=monitor.get("collect_seller_profiles") is True,
+            browser_channel=cfg.browser_channel),
             ensure_ascii=False), encoding="utf-8")
         outcome = directory / "outcome.json"
         outcome.unlink(missing_ok=True)

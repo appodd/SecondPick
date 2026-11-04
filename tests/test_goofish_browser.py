@@ -26,7 +26,8 @@ def test_invalid_credentials_rejected_without_raw_errors(changes):
         monitor_cookies({"cookies": [cookie(**changes)]})
 
 
-def test_browser_boundary_forces_protection_and_memory_state():
+@pytest.mark.parametrize('channel', [None, 'chromium'])
+def test_browser_boundary_forces_protection_and_memory_state(channel):
     calls = []
     class NativeBrowser:
         async def new_context(self, **kwargs):
@@ -43,7 +44,7 @@ def test_browser_boundary_forces_protection_and_memory_state():
             pass
     state = monitor_cookies({"cookies": [cookie()]})
     async def run():
-        async with protected_playwright(Manager, state)() as p:
+        async with protected_playwright(Manager, state, browser_channel=channel)() as p:
             browser = await p.chromium.launch(headless=False, args=["--no-sandbox", "--disable-web-security"],
                                               chromium_sandbox=False, executable_path="untrusted")
             assert await browser.new_context(storage_state="private-path", permissions=["geolocation"],
@@ -51,7 +52,7 @@ def test_browser_boundary_forces_protection_and_memory_state():
                 extra_http_headers={"Authorization": "private"}, viewport={"width": 400, "height": 600}) == "context"
     asyncio.run(run())
     launch, context = calls[0][1], calls[1][1]
-    assert launch == dict(headless=True, chromium_sandbox=True, args=["--disable-dev-shm-usage", "--enable-automation"])
+    assert launch == dict(headless=True, chromium_sandbox=True, args=["--disable-dev-shm-usage", "--enable-automation"], **({'channel': channel} if channel else {}))
     assert context["storage_state"] == state and context["storage_state"] is not state
     assert context["permissions"] == [] and not context["ignore_https_errors"] and not context["accept_downloads"]
     assert "extra_http_headers" not in context and "geolocation" not in context

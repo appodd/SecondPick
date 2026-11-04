@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -28,6 +28,7 @@ class SafetyConfig(BaseModel):
 
 
 class MonitorEngineConfig(BaseModel):
+    browser_channel: Literal['chrome', 'msedge', 'chromium'] | None = None
     enabled: bool = False
     capture_logs: bool = True
     root: Path | None = None

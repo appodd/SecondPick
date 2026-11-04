@@ -25,7 +25,11 @@
 阅读 README.md、docs/user-guide.md、docs/architecture.md 和 docs/DEVELOPMENT.md。
 检查系统、Python、浏览器、端口及虚拟环境，根据实际状态规划并执行必要安装，
 优先使用现有兼容环境。区分“网页工作台可启动”和“真实采集已就绪”。
-需要采集时按文档准备独立引擎、核对受支持版本、实际配置与浏览器环境。
+首次安装使用 Python 3.12 创建项目环境并安装应用，再运行 python scripts/setup_monitor.py。
+由统一程序获取固定版本引擎、准备独立 Python 依赖、应用登录与采集浏览器，
+执行环境检查并生成启动配置，不让用户手动 clone 外部引擎、checkout 或拼接独立环境。
+准备成功后在仓库根目录运行 shopping-agent-web，默认自动读取本地监控配置；
+已有显式自定义配置时先核对原启动方式和数据位置，不擅自切换。
 不要同时启动多个实例操作同一数据库，也不要将服务绑定到公网。
 
 询问我使用基础采集还是 AI 增强模式，再带我完成对应的首次引导。
@@ -65,7 +69,12 @@
 按授权安排维护，不为升级直接终止活动任务。备份须与数据库写入状态一致，
 保留原配置、登录资料和数据目录，记录原提交及恢复步骤。
 
-按文档更新代码和必要依赖，沿用用户的基础或 AI 增强模式，不额外启用研究，
+按文档更新代码和必要依赖，沿用用户的基础或 AI 增强模式，不额外启用研究。
+在已正常停止相关服务的原项目环境运行 python scripts/setup_monitor.py，统一准备或修复采集依赖。
+默认安装随后运行 shopping-agent-web，无需手动拼接 --config；自定义安装按原实际配置
+使用准备程序的 --config 并保留显式启动方式。只读诊断可用 python scripts/setup_monitor.py --check-only。
+自定义安装的只读诊断也需带上原 --config 路径。
+已有引擎版本冲突、修改或未知目录时，保留现场并按程序提示处理，不强制 checkout 或覆盖。
 如需 AI，先检查并复用已有兼容的 Codex CLI 和有效授权，避免重复安装或授权；
 不覆盖独立引擎本地改动，不启动多个实例共用数据库。需要用户登录时由本人完成。
 涉及自动研究授权或监控范围变化，单独展示并确认，不把升级视为授权。
@@ -124,8 +133,14 @@ I will handle repository authentication myself.
 Read README.en.md, docs/user-guide.md, docs/architecture.md, and docs/DEVELOPMENT.md.
 Inspect the OS, Python, browser, ports, and environments; plan and execute the necessary
 installation using compatible existing resources. Distinguish a working web interface
-from real collection readiness. For collection, prepare the separate engine according
-to the docs, checking its supported revision, actual configuration, and browser environment.
+from real collection readiness. For a new installation, use Python 3.12 to create the
+project environment and install the app, then run python scripts/setup_monitor.py.
+Let that program fetch the pinned engine, prepare isolated Python dependencies and both
+login and collection browsers, check the environment, and generate startup configuration.
+Do not make the user manually clone or check out the external engine or assemble its environment.
+After success, run shopping-agent-web from the repository root; generated local monitoring
+configuration is loaded automatically. Preserve existing explicit custom configuration,
+startup methods, and data locations rather than switching them silently.
 Do not run multiple instances against one database or expose the service publicly.
 
 Ask whether I want Basic collection or AI-enhanced mode, then guide me through onboarding.
@@ -175,6 +190,14 @@ configuration, login profiles, and data locations; record the original commit an
 Update code and required dependencies according to the docs. Preserve Basic or AI-enhanced
 mode and existing permissions. When AI is needed, inspect and reuse compatible existing
 Codex CLI and valid authentication rather than reinstalling or requesting login again.
+After stopping the relevant services normally, run python scripts/setup_monitor.py in
+the original project environment to prepare or repair collection dependencies. For a
+default installation, restart with shopping-agent-web; no manual --config assembly is needed.
+For custom installations, pass their actual --config to the preparation program and
+preserve the explicit startup configuration. Use python scripts/setup_monitor.py --check-only
+for read-only diagnostics. Preserve conflicting engine revisions, local changes, or unknown
+directories and follow the reported instructions; do not force checkout or overwrite them.
+Read-only diagnostics for a custom installation must also include its original --config path.
 Do not overwrite engine modifications or run multiple
 instances against one database. I will handle any required login.
 Show and separately confirm research authorization or monitor-scope changes; an update

@@ -132,6 +132,8 @@ SecondPick 将这些工作放进一个持续维护的**选购项目**。你可�
 
 管理多个已确认范围的任务，选择单次采集、限时监控或长期监控。可以查看运行记录、等待状态与异常，并控制持续监控的开启和暂停。任务开关表示调度是否允许，不等于此刻正在抓取。
 
+AI 增强模式下，可以用自然语言描述选购目标和采集范围，让内部 Agent 生成可编辑的监控任务草案，再核对关键词、运行方式、间隔和每轮数量，预览确认后执行。生成草案需要 Codex CLI 与认证，会调用 AI，但不会直接开始采集；这是部署后的任务配置，与安装采集引擎是两个阶段。
+
 ![监控任务：单次、限时与长期监控的模拟状态](docs/images/readme-monitors.png)
 
 ### 5. Agent 研究：查看研究过程与证据
@@ -197,11 +199,17 @@ flowchart LR
 https://github.com/appodd/SecondPick 获取项目。
 阅读 README.md、docs/agent-prompts.md、docs/user-guide.md 和 docs/DEVELOPMENT.md，
 按文档检查环境、自主规划并安装所需依赖、启动工作台，带我完成首次配置。
-先问我只需基础监控采集，还是需要 AI 增强，再准备对应能力；视觉模型可选。
+新安装使用 Python 3.12 创建项目环境并安装应用，再运行 python scripts/setup_monitor.py，
+由统一程序准备固定版本引擎、独立依赖和浏览器；无需我手动获取或配置外部引擎。
+已有安装先按授权正常停止工作台，再在原项目环境运行同一准备命令。
+准备成功后在仓库根目录运行 shopping-agent-web，默认自动读取生成的本地配置；
+已有显式自定义配置的安装，先核对并保留原启动方式和数据位置。
+先问我只需基础监控采集，还是需要 AI 增强，再准备对应能力；基础采集不需要 Codex CLI，视觉模型可选。
 需要 AI 时先检查本机已有 Codex CLI 及授权能否被 SecondPick 服务使用，满足要求
 就直接复用，不重复安装或要求重新授权；不满足时再说明需要补充的配置。
 保留已有项目数据和配置，登录由我本人完成；真实采集、持久化配置变更和
 自动研究授权，在说明具体范围并获得相应确认后执行。
+安装和引导不自动开始采集或授权研究，不以真实采集或模型调用作为默认部署测试。
 最后给出访问地址、实际检查结果和仍需我完成的步骤。
 ```
 
@@ -219,37 +227,37 @@ https://github.com/appodd/SecondPick 获取项目。
 | --- | --- |
 | 主要验证环境 | Windows 10/11、PowerShell |
 | Python | 推荐 Python 3.12 |
-| 浏览器 | 安装 Playwright Chromium 用于应用浏览器流程；独立采集环境还需通过其系统 Chrome 检查 |
+| Git 与网络 | 统一准备程序通过 Git 获取固定版本引擎，并下载依赖与浏览器 |
+| 浏览器 | 统一准备程序安装用户级 Playwright Chromium，供登录和采集使用；无需系统级安装 Chrome |
 | Node.js | 已包含前端构建产物，直接运行不需要；修改前端时按锁文件准备 |
 | AI 驱动 | 仅在使用 AI 整理、研究或追问时需要准备 Codex CLI 与认证 |
 | 视觉模型 | 两种模式均可跳过，不是完成引导或文字研究的必备条件 |
 
 补充兼容性说明：应用在 [pyproject.toml](pyproject.toml) 中声明 Python 3.9+；[独立采集环境安装脚本](scripts/setup_monitor.py)要求 3.11+，Windows Python 3.12 使用仓库提供的[锁定依赖](requirements/monitor-engine-windows-py312.lock.txt)。其他版本仍需通过实际依赖安装与引擎检查，不表示均已完成验证。
 
-#### 1. 安装并启动网页工作台
+#### 1. 安装应用、准备采集环境并启动
 
 ```powershell
 git clone --branch main https://github.com/appodd/SecondPick.git
 Set-Location SecondPick
 
-python -m venv .venv
+py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -e .
+python scripts/setup_monitor.py
 
 shopping-agent-web
 ```
 
-打开 [http://127.0.0.1:8765](http://127.0.0.1:8765)，即可查看工作台并进入使用引导。以上是最短启动路径，无需 CLI 或视觉依赖；尚未准备真实采集环境。
+准备程序会获取固定版本的闲鱼引擎、创建独立采集环境、安装锁定依赖和浏览器，并在检查通过后生成本地配置。普通启动命令自动使用该配置，无需记忆额外参数；不会登录、创建监控任务、启动采集或调用模型。Git 和网络须可用；失败时按终端报告的阶段处理后可重复执行。
 
-#### 2. 准备采集并完成基础配置
+应用登录浏览器与独立采集浏览器可能使用不同版本的 Playwright；统一程序会分别准备所需的 Chromium，无需用户单独安装。
 
-在已激活的虚拟环境中，为应用的登录浏览器安装 Chromium：
+打开 [http://127.0.0.1:8765](http://127.0.0.1:8765)，进入使用引导。
 
-```powershell
-python -m playwright install chromium
-```
+#### 2. 完成首次引导与闲鱼登录
 
-真实监控还需要[准备独立采集引擎](docs/user-guide.md#准备独立采集环境)，通过其依赖和系统 Chrome 检查，并使用正确的本地配置启动服务。在引导中选择「基础模式」，完成应用基础、采集环境和闲鱼连接检查，点击「完成基础配置并开始使用」。
+上一步统一准备程序已准备采集引擎与浏览器。在引导中选择「基础模式」，重新检查采集环境，并完成闲鱼连接验证，点击「完成基础配置并开始使用」。如安装失败或已有自定义配置，见[安装与修复说明](docs/user-guide.md#准备独立采集环境)。
 
 登录由本人操作：**保持弹出的闲鱼浏览器打开，返回应用验证连接，验证完成后再关闭。**
 
@@ -258,6 +266,17 @@ python -m playwright install chromium
 手动填写想买什么、预算、必须条件与偏好。随后设置关键词、监控方式和每轮范围，预览并确认后启动，在「全部商品」浏览、筛选和收藏。只采集不需要 Codex CLI，也不必授权自动研究；详细操作见[只抓取的使用方式](docs/user-guide.md#只抓取的使用方式)。
 
 第一次使用是空业务数据库，不会自动导入 README 中的演示商品。已在使用的用户应保留原配置和数据目录，不要同时启动多个实例操作同一数据库。
+
+#### 已有安装更新与只读诊断
+
+正常停止工作台后，在仓库根目录、原有已激活的项目 Python 环境中执行：
+
+```powershell
+python scripts/setup_monitor.py
+shopping-agent-web
+```
+
+只读检查使用 `python scripts/setup_monitor.py --check-only`。程序保留已有配置和数据，遇到版本冲突、修改或未知目录时停止并提示处理。已有显式自定义配置的安装，准备、诊断及启动均须沿用原 `--config` 路径；已有配置指定系统 Chrome 或 Edge 时仍需保证该浏览器可用，详见[安装与修复说明](docs/user-guide.md#准备独立采集环境)。
 
 #### 按需开启 AI 与图片能力
 

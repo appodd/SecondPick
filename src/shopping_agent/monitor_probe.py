@@ -13,7 +13,7 @@ else:
     from goofish_control_flow import repair_detail_control_flow, CompatibilityError
 
 
-async def probe(root):
+async def probe(root, browser_channel=None):
     checks = []
     try:
         ZoneInfo("Asia/Shanghai")
@@ -31,7 +31,7 @@ async def probe(root):
     except CompatibilityError:
         return [*checks, dict(code="control_flow", ok=False)]
     try:
-        factory = protected_playwright(scraper.async_playwright, {"cookies": [], "origins": []})
+        factory = protected_playwright(scraper.async_playwright, {"cookies": [], "origins": []}, browser_channel=browser_channel)
         async with factory() as p:
             browser = await p.chromium.launch(channel=scraper._resolve_browser_channel())
             try:
@@ -57,7 +57,7 @@ def main():
             if isinstance(address, tuple) and address[0] not in {"127.0.0.1", "::1", "localhost"}:
                 raise OSError("Remote connections disabled for environment probe")
     sys.addaudithook(no_remote_python_connections)
-    result = asyncio.run(probe(root))
+    result = asyncio.run(probe(root, sys.argv[3] if len(sys.argv) > 3 else None))
     output.write_text(json.dumps(result), encoding="utf-8")
 
 

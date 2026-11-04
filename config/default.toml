@@ -34,6 +34,8 @@ capture_logs = true
 root = "data/research/ai-goofish-monitor"
 python = ".monitor-venv/Scripts/python.exe"
 # Run scripts/setup_monitor.py and check the environment before enabling.
+# The preparation script creates monitor.local.toml, loaded by the normal launcher.
+# New installations use user-level Chromium; existing browser choices are retained.
 # Verified local login supplies DPAPI cookies. Start from the repository root.
 # Optional state_file is an administrator-provided fallback; never exposed via API.
 # Engine configuration changes require a service restart.

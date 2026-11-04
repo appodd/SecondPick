@@ -63,3 +63,48 @@ def test_oversized_probe_result_is_rejected(tmp_path, monkeypatch):
     monkeypatch.setattr(module, "run_process", lambda cmd, **kw: Path(cmd[-1]).write_text(" " * 5000))
     result = check_monitor_environment(config(tmp_path))
     assert not result["ready"] and result["checks"][-1] == dict(code="probe", ok=False)
+
+
+def test_missing_source_is_not_a_revision_failure(tmp_path, monkeypatch):
+    import shopping_agent.monitor_environment as module
+    monkeypatch.setattr(module.GoofishEngine, 'preflight', lambda self: pytest.fail('no revision check for absent engine'))
+    cfg = AppConfig(monitor_engine=MonitorEngineConfig(root=tmp_path / 'missing', python=tmp_path / 'python'))
+    result = check_monitor_environment(cfg)
+    assert not result['ready']
+    assert result['checks'][-1] == dict(code='source', ok=False)
+    assert not any(c['code'] == 'revision' for c in result['checks'])
+
+
+def test_missing_python_is_reported_after_compatible_source(tmp_path, monkeypatch):
+    import shopping_agent.monitor_environment as module
+    monkeypatch.setattr(module.GoofishEngine, 'preflight', lambda self: tmp_path)
+    monkeypatch.setattr(module, 'run_process', lambda *a, **kw: pytest.fail('must not probe'))
+    cfg = AppConfig(monitor_engine=MonitorEngineConfig(root=tmp_path, python=tmp_path / 'missing'))
+    assert check_monitor_environment(cfg)['checks'][-1] == dict(code='python', ok=False)
+
+
+def test_browser_channel_reaches_probe(tmp_path, monkeypatch):
+    import shopping_agent.monitor_environment as module
+    monkeypatch.setattr(module.GoofishEngine, 'preflight', lambda self: tmp_path)
+    def process(command, **kwargs):
+        assert command[-1] == 'chromium'
+        Path(command[-2]).write_text(json.dumps([dict(code=c, ok=True) for c in ('dependencies', 'control_flow', 'browser')]))
+    monkeypatch.setattr(module, 'run_process', process)
+    cfg = config(tmp_path)
+    cfg.monitor_engine.browser_channel = 'chromium'
+    assert check_monitor_environment(cfg)['ready']
+
+
+@pytest.mark.parametrize('failure', ['dependencies', 'control_flow', 'browser'])
+def test_failed_probe_stage_is_preserved(tmp_path, monkeypatch, failure):
+    import shopping_agent.monitor_environment as module
+    monkeypatch.setattr(module.GoofishEngine, 'preflight', lambda self: tmp_path)
+    rows = []
+    for code in ('dependencies', 'control_flow', 'browser'):
+        rows.append(dict(code=code, ok=code != failure))
+        if code == failure:
+            break
+    monkeypatch.setattr(module, 'run_process', lambda command, **kw: Path(command[-1]).write_text(json.dumps(rows)))
+    result = check_monitor_environment(config(tmp_path))
+    assert not result['ready']
+    assert result['checks'][-1] == dict(code=failure, ok=False)

@@ -1,6 +1,7 @@
 # Local environments, caches, and build intermediates.
 .venv/
 .monitor-venv/
+.monitor-venv.secondpick-owner.json
 venv/
 node_modules/
 __pycache__/
