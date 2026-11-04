@@ -34,7 +34,7 @@ Vision is optional in both modes. A missing vision configuration or failed visio
 | Taobao | Complete, usable search and detail collection are not implemented. |
 | Zhuanzhuan | Complete, usable search and detail collection are not implemented. |
 
-Adapter interfaces, placeholder classes, and price-reference plans are not completed integrations. The Agent can analyze saved public seller information; a complete automatic seller-homepage collection and further investigation capability is not currently provided. Platform access remains subject to login, verification, and access restrictions.
+Adapter interfaces, placeholder classes, and price-reference plans are not completed integrations. The Agent can analyze saved public seller information. Monitoring can collect public seller profiles and published listings when explicitly selected and confirmed; this is off by default. The Agent's further-investigation workflow does not currently execute automatic seller-homepage investigations. Platform access remains subject to login, verification, and access restrictions.
 
 ## How it works
 
@@ -146,6 +146,8 @@ python -m pip install -e ".[vision]"
 
 The extra includes `httpx` and `Pillow`. Cached listing images also use Pillow for decoding and validation; if you only need that image-processing capability, install `python -m pip install "Pillow>=10.0.0"` without configuring a vision model. Collecting listing records and browsing text fields do not require these extras.
 
+Vision connection verification sends a built-in test image after confirmation and may incur charges. Model configuration, image-scope approval, and analysis execution are separate controls. The default service does not enable project image-analysis execution; configuring a model or approving a scope does not analyze listing images. See [vision configuration and image approval (Chinese)](docs/user-guide.md#视觉配置与图片审批).
+
 Vision is optional in both onboarding paths. Revisiting setup preserves existing projects, listings, and research history.
 
 ## Inside the workspace
@@ -202,7 +204,7 @@ See the [development guide (Chinese)](docs/DEVELOPMENT.md) for source layout, te
 ## Data and usage boundaries
 
 - **Stored locally, sent to AI when needed:** projects, evidence, research history, and login profiles are kept on your machine. AI requests send relevant goals and evidence to your configured model service; approved images may also be sent. See [privacy boundaries (Chinese)](docs/PRIVACY.md).
-- **Runtime data stays outside the repository:** databases, login profiles, keys, and real business screenshots are not distributed with the source. Keep existing data directories when upgrading, and do not run multiple app instances against the same database.
+- **Keep runtime data out of Git:** databases, login profiles, keys, and real business screenshots are not distributed with the source. Default runtime directories are inside the checkout and ignored by Git; review files before sharing. Keep existing data directories when upgrading, and do not run multiple app instances against the same database.
 - **Users handle transactions themselves:** Xianyu access is unofficial. Stop and follow the platform's normal process if verification, expired login sessions, or access restrictions occur. The app does not automatically message sellers, negotiate, place orders, or pay. See [account risks (Chinese)](docs/account-risk.md).
 
 This is a **development snapshot**. Full backend regression and independent installation checks have passed in the specified environment; see the [validation record (Chinese)](docs/VALIDATION.md) for results and skip reasons. Real platform collection, external model quality, long-running stability, and other environments require separate validation.
